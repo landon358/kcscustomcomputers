@@ -1,5 +1,13 @@
-// Product catalogue. Shopify can drive `inStock` and `stockNote` per variant.
-window.PRODUCTS = [
+// Static product catalogue.
+//
+// This is the fallback AND the source of presentation detail. When Shopify is
+// configured, shopify.js merges live commerce data (price, stock, variant ID,
+// images) over these entries, matching Shopify's product `handle` to `id`
+// below — so keep the handles in Shopify identical to these ids.
+//
+// Everything Shopify does not model well — specs, fps benchmarks, tagline —
+// keeps living here.
+window.PRODUCTS_STATIC = [
   {
     id: 'prime-s', name: 'Prime S', kind: 'prime', price: 1300, inStock: true,
     images: ['images/prime-s.jpg', 'images/hero-01-white-openframe.jpg'],
@@ -76,5 +84,9 @@ window.PRODUCTS = [
   }
 ];
 
+// Live catalogue. Starts as the static list so synchronous page code keeps
+// working, then gets replaced in place once Shopify responds.
+window.PRODUCTS = window.PRODUCTS_STATIC.slice();
+
 window.byId = function (id) { return window.PRODUCTS.find(function (p) { return p.id === id; }) || window.PRODUCTS[2]; };
-window.money = function (n) { return '$' + n.toLocaleString('en-US'); };
+window.money = function (n) { return '$' + Math.round(n).toLocaleString('en-US'); };

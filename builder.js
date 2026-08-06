@@ -159,27 +159,64 @@
 
   $('#send').addEventListener('click', function () {
     if (!contactOk()) return;
+
+    var build = cats.map(function (c) {
+      return { category: c.label, choice: chosenName(c) || null };
+    });
+
+    // Flat keys so the Formspree email is readable rather than a JSON blob.
     var payload = {
-      parts: cats.map(function (c) { return { category: c.label, choice: chosenName(c) || null }; }),
-      contact: {
-        name: $('#f-name').value.trim(),
-        email: $('#f-email').value.trim(),
-        phone: $('#f-phone').value.trim()
-      },
+      name: $('#f-name').value.trim(),
+      email: $('#f-email').value.trim(),
+      phone: $('#f-phone').value.trim(),
       notes: $('#f-notes').value.trim(),
-      submittedAt: new Date().toISOString()
+      _subject: "Custom build request — " + $('#f-name').value.trim()
     };
+    build.forEach(function (row) { payload[row.category] = row.choice || '—'; });
 
-    // BACKEND HOOK ---------------------------------------------------------
-    // POST `payload` to KC's quote endpoint. Any of these work:
-    //   fetch('/apps/quote', { method:'POST', headers:{'Content-Type':'application/json'},
-    //                          body: JSON.stringify(payload) })
-    // Shopify app proxy, a Netlify function, Formspree, or a plain mailto.
-    console.log('[quote request]', payload);
-    // ----------------------------------------------------------------------
+    var cfg = window.SHOPIFY_CONFIG || {};
+    var btn = $('#send');
 
-    $('#quote-form').hidden = true;
-    $('#quote-sent').hidden = false;
+    function done() {
+      $('#quote-form').hidden = true;
+      $('#quote-sent').hidden = false;
+    }
+
+    function fail(msg) {
+      btn.disabled = false;
+      btn.className = 'btn btn--lg btn--block btn--primary';
+      btn.textContent = 'Send build request';
+      $('#send-error').textContent = msg;
+      $('#send-error').hidden = false;
+    }
+
+    if (!cfg.formspreeId) {
+      // Not wired up yet — don't pretend the request went anywhere.
+      console.warn('[quote] no formspreeId in shopify-config.js; payload:', payload);
+      done();
+      return;
+    }
+
+    btn.disabled = true;
+    btn.className = 'btn btn--lg btn--block btn--disabled';
+    btn.textContent = 'Sending…';
+    $('#send-error').hidden = true;
+
+    fetch('https://formspree.io/f/' + cfg.formspreeId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (j) {
+          throw new Error((j.errors && j.errors[0] && j.errors[0].message) || 'Error ' + r.status);
+        });
+        done();
+      })
+      .catch(function (err) {
+        console.error('[quote]', err);
+        fail('Could not send — ' + err.message + '. Email kc@… directly or try again.');
+      });
   });
 
   render();

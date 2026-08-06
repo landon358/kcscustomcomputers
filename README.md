@@ -29,21 +29,71 @@ relative, so the site works from a project subpath without changes.
 | `build-custom.html` | Custom PC configurator. |
 | `styles.css` | Site stylesheet. Palette lives in `:root` custom properties. |
 | `builder.css` | Configurator and mobile-nav styles. |
-| `products.js` | Pre-built catalogue. `inStock` drives the out-of-stock state. |
+| `cart.css` | Cart drawer styles. |
+| `shopify-config.js` | **Your store credentials. The only file you need to edit.** |
+| `shopify.js` | Storefront API client, product loading, cart state. |
+| `cart.js` | Cart drawer UI. Injects its own markup into every page. |
+| `products.js` | Fallback catalogue + all presentation detail (specs, fps, copy). |
 | `components.js` | Configurator part catalogue. |
 | `home.js`, `shop.js`, `product.js`, `builder.js`, `nav.js` | Page logic. |
 | `images/`, `media/` | Photography and the two hero clips. |
 
-## Hooks left for the backend
+## Shopify
 
-Search the source for these:
+The site runs headless: this front end is static, Shopify is the commerce
+backend, reached over the **Storefront API** from the browser.
 
-- **`BACKEND HOOK`** in `builder.js` — where the custom-build quote payload
-  should be POSTed (Shopify app proxy, Netlify function, Formspree, etc).
-  It currently logs the payload to the console.
-- **Cart and account links** — `href=""` on the two nav icon buttons, marked
-  with a comment in every page. Point them at `/cart` and `/account`.
-- **Add to cart** in `product.js` — currently sets local state only.
+| Concern | Where it lives |
+|---|---|
+| Design, layout, routing | This repo |
+| Prices, stock, product images | Shopify, via Storefront API |
+| Cart | Shopify `cart` mutations — cart lives on Shopify, only the cart ID is in `localStorage` |
+| Checkout and payment | Shopify-hosted, via `cart.checkoutUrl` |
+| Customer accounts | Shopify-hosted account pages |
+| Custom-build quotes | Formspree (no payment — KC quotes manually) |
+
+**Everything is off until you fill in `shopify-config.js`.** With it blank the
+site renders from `products.js` exactly as before, so the demo never breaks.
+
+### Getting the Storefront token
+
+1. Shopify Admin → **Settings** → **Apps and sales channels** → **Develop apps**
+2. **Create an app**, name it something like `Storefront`
+3. **Configure Storefront API scopes**, tick:
+   - `unauthenticated_read_product_listings`
+   - `unauthenticated_read_product_inventory`
+   - `unauthenticated_write_checkouts`
+   - `unauthenticated_read_checkouts`
+4. **Install app**, then **API credentials** → copy the **Storefront API access token**
+5. Paste it and your `.myshopify.com` domain into `shopify-config.js`
+
+That token is public by design — it is meant to ship in browser JavaScript.
+Never put an Admin API token in this repo.
+
+### Product setup
+
+Each Shopify product's **handle** must match the `id` in `products.js`
+(`prime-s`, `prime-m`, `deal-850`, …). Shopify then drives price, stock,
+images and the variant ID, while `products.js` keeps supplying specs, fps
+figures and copy — merged by handle in `shopify.js`.
+
+Tag products `deal` to put them in the one-time-deals grid, and `popular` for
+the "most popular" badge. Publish everything to the app's sales channel or the
+API returns nothing.
+
+### Custom-build quotes
+
+The configurator has no pricing — it collects a spec and sends it to KC.
+Create a form at [formspree.io](https://formspree.io), then put the ID from
+its endpoint (`https://formspree.io/f/XXXXXXXX`) into `formspreeId`. Until
+that is set the form still confirms to the user and logs the payload to the
+console.
+
+### Still to decide
+
+Charging for custom builds needs a Shopify **draft order**, which requires the
+Admin API and therefore a server — a Netlify Function with the Admin token in
+an environment variable. Not built yet; quotes are manual for now.
 
 ## Notes
 

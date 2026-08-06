@@ -310,6 +310,11 @@
 .sent p { margin: 10px 0 0; font: 400 15px/1.6 var(--ui); color: var(--ink-2); }
 
 .finehint { font: 500 11.5px/1.5 var(--ui); color: var(--ink-3); margin-top: 10px; text-align: center; }
+.sendfail {
+  font: 500 12.5px/1.55 var(--ui); color: var(--danger);
+  background: var(--danger-tint); border-radius: 10px;
+  padding: 10px 13px; margin-top: 12px; text-align: center;
+}
 .linkish {
   width: 100%;
   margin-top: 10px;

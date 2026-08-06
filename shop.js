@@ -58,9 +58,19 @@
       '</article>';
   }
 
-  document.getElementById('prime-grid').innerHTML =
-    window.PRODUCTS.filter(function (p) { return p.kind === 'prime'; }).map(primeCard).join('');
+  function paint() {
+    document.getElementById('prime-grid').innerHTML =
+      window.PRODUCTS.filter(function (p) { return p.kind === 'prime'; }).map(primeCard).join('');
 
-  document.getElementById('deal-grid').innerHTML =
-    window.PRODUCTS.filter(function (p) { return p.kind === 'deal'; }).map(dealCard).join('');
+    document.getElementById('deal-grid').innerHTML =
+      window.PRODUCTS.filter(function (p) { return p.kind === 'deal'; }).map(dealCard).join('');
+  }
+
+  // Paint from the static catalogue immediately, then again with live
+  // Shopify pricing and stock once it lands.
+  paint();
+  window.Shopify.loadProducts().then(function (list) {
+    window.PRODUCTS = list;
+    paint();
+  });
 })();

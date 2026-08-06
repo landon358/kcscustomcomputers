@@ -236,4 +236,11 @@
   fitCallouts();
   requestAnimationFrame(frame);
   initVideo();
+
+  // Live Shopify pricing and stock, once it arrives.
+  window.Shopify.loadProducts().then(function (list) {
+    window.PRODUCTS = list;
+    renderConfig();
+    renderDeals();
+  });
 })();
