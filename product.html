@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product — KC's Custom Computers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="builder.css">
+</head>
+<body>
+<nav class="nav nav--solid">
+  <a class="nav__logo" href="index.html">KC's Custom Computers</a>
+  <button class="nav__toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false"><i></i></button>
+  <div class="nav__actions" id="nav-actions">
+    <a class="btn btn--ghost" href="index.html">Home</a>
+    <a class="btn btn--ghost is-active" href="shop.html">Shop Pre-Built</a>
+    <a class="btn btn--primary" href="build-custom.html">Build Custom</a>
+    <div class="nav__divider"></div>
+    <!-- Shopify: point these at /cart and /account -->
+    <a class="btn btn--icon" href="" aria-label="Cart"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></a>
+    <a class="btn btn--icon" href="" aria-label="Account"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a>
+  </div>
+</nav>
+
+<section class="section" style="padding-top:118px">
+  <nav class="crumbs">
+    <a href="shop.html">Shop Pre-Built</a><span>/</span><span id="crumb-name" style="color:var(--ink-2)"></span>
+  </nav>
+
+  <div class="product">
+    <div>
+      <div class="product__stage">
+        <img id="p-shot" src="" alt="">
+        <span class="pill" id="p-stock"></span>
+      </div>
+      <div class="thumbs" id="p-thumbs"></div>
+    </div>
+
+    <div>
+      <span class="eyebrow" id="p-kind"></span>
+      <h1 id="p-name"></h1>
+      <p class="product__tagline" id="p-tagline"></p>
+
+      <div class="product__price">
+        <b id="p-price"></b>
+        <span style="font:500 13px var(--ui);color:var(--ink-3)">Windows 11 Pro included &middot; no bloatware</span>
+      </div>
+
+      <div class="buybar">
+        <div class="qty">
+          <button type="button" id="q-dec" aria-label="Decrease quantity">&minus;</button>
+          <span id="q-val">1</span>
+          <button type="button" id="q-inc" aria-label="Increase quantity">+</button>
+        </div>
+        <!-- Shopify: swap for a form posting variant id + quantity to /cart/add -->
+        <button type="button" class="btn btn--primary" id="p-buy">Add to cart</button>
+      </div>
+      <div class="buynote" id="p-note"></div>
+
+      <div class="block">
+        <div class="block__label">FULL SPECIFICATION</div>
+        <div style="margin-top:12px" id="p-specs"></div>
+      </div>
+
+      <div class="block" style="border-top:none;padding-top:0;margin-top:26px">
+        <div class="block__label">MEASURED ON THE BENCH &middot; 1080P</div>
+        <div style="margin-top:14px" id="p-bench"></div>
+      </div>
+
+      <p class="product__blurb" id="p-blurb"></p>
+
+      <div class="badges">
+        <span class="pill pill--outline">2-year labor warranty</span>
+        <span class="pill pill--outline">Free local pickup</span>
+        <span class="pill pill--outline">Insured nationwide shipping</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:76px">
+  <div class="section__head">
+    <span class="eyebrow">Also on the bench</span>
+    <a class="spacer" style="font:600 13.5px var(--ui);color:var(--blue)" href="shop.html">See everything &rarr;</a>
+  </div>
+  <div class="related" id="p-related"></div>
+</section>
+
+<footer class="footer">
+  <div class="footer__top">
+    <div class="footer__brand">
+      <h3>Built one at a time in Walled Lake, Michigan.</h3>
+      <p>Questions about a spec, a repair or a trade-in? Reach out &mdash; you'll get the builder, not a queue.</p>
+      <div class="footer__mail">
+        <span>hello@kccustom.pc</span>
+        <a class="btn btn--primary" href="build-custom.html">Get in touch</a>
+      </div>
+    </div>
+    <div class="footer__links">
+      <div class="footer__col">
+        <span>SHOP</span>
+        <a href="shop.html">Pre-built PCs</a>
+        <a href="build-custom.html">Build custom</a>
+      </div>
+      <div class="footer__col">
+        <span>SUPPORT</span>
+        <a href="index.html">Warranty &amp; returns</a>
+        <a href="index.html">Shipping</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer__mark">KC's Custom Computers</div>
+  <div class="footer__legal">
+    <span>&copy; 2026 KC's Custom Computers &middot; Walled Lake, MI</span>
+    <span>Visa &middot; Mastercard &middot; Amex &middot; PayPal &middot; Apple Pay &middot; Shop Pay</span>
+  </div>
+</footer>
+<script src="nav.js"></script>
+<script src="products.js"></script>
+<script src="product.js"></script>
+</body>
+</html>

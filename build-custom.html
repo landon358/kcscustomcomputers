@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build Custom — KC's Custom Computers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="builder.css">
+</head>
+<body>
+<nav class="nav nav--solid">
+  <a class="nav__logo" href="index.html">KC's Custom Computers</a>
+  <button class="nav__toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false"><i></i></button>
+  <div class="nav__actions" id="nav-actions">
+    <a class="btn btn--ghost" href="index.html">Home</a>
+    <a class="btn btn--ghost" href="shop.html">Shop Pre-Built</a>
+    <a class="btn btn--primary" href="build-custom.html">Build Custom</a>
+    <div class="nav__divider"></div>
+    <!-- Shopify: point these at /cart and /account -->
+    <a class="btn btn--icon" href="" aria-label="Cart"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></a>
+    <a class="btn btn--icon" href="" aria-label="Account"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a>
+  </div>
+</nav>
+
+<header class="page-head" style="padding-top:120px">
+  <span class="eyebrow">Build custom</span>
+  <h1>Spec your machine, part by part.</h1>
+  <p>Pick a part in each category. When the list is complete, send it over and KC will come back with a price, a compatibility check and a build date.</p>
+</header>
+
+<section class="section" style="padding-top:34px">
+  <div class="builder">
+
+    <aside class="summary">
+      <div class="summary__head">
+        <span>YOUR BUILD</span>
+        <span id="sum-count">0 of 6</span>
+      </div>
+      <div class="progress"><i id="sum-bar"></i></div>
+      <div class="slots" id="slots"></div>
+      <button type="button" class="btn btn--lg btn--block btn--disabled" id="quote-btn" style="margin-top:20px" disabled>Get a quote</button>
+      <div class="finehint" id="quote-hint"></div>
+      <button type="button" class="linkish" id="reset">Start over</button>
+    </aside>
+
+    <div style="min-width:0">
+      <div class="tabs" id="tabs"></div>
+
+      <div class="picker">
+        <h2 id="pick-title"></h2>
+        <p class="picker__blurb" id="pick-blurb"></p>
+
+        <div id="freetext" hidden style="margin-top:22px">
+          <textarea class="field" id="case-input" rows="4"></textarea>
+          <div style="font:500 12px var(--ui);color:var(--ink-3);margin-top:10px">Not sure? Write "recommend one" and KC will pick something that fits the parts above.</div>
+        </div>
+
+        <div class="optgrid" id="optgrid"></div>
+
+        <div class="stepnav">
+          <button type="button" class="btn btn--ghost" id="step-back">Back</button>
+          <button type="button" class="btn btn--primary" id="step-next">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal__card">
+
+    <div id="quote-form">
+      <div class="modal__head">
+        <div>
+          <span class="eyebrow">Get a quote</span>
+          <h2>Send KC your parts list.</h2>
+        </div>
+        <button type="button" class="modal__close" id="modal-close" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="bom" id="bom"></div>
+
+      <div class="formgrid">
+        <label><span>Your name</span><input id="f-name" type="text" placeholder="KC Fegely"></label>
+        <label><span>Email</span><input id="f-email" type="email" placeholder="you@email.com"></label>
+        <label><span>Phone (optional)</span><input id="f-phone" type="tel" placeholder="(248) 000-0000"></label>
+        <label><span>Anything else?</span><textarea id="f-notes" rows="3" placeholder="Games you play, budget, deadline, questions…"></textarea></label>
+      </div>
+
+      <button type="button" class="btn btn--lg btn--block btn--disabled" id="send" style="margin-top:20px" disabled>Send my build request</button>
+      <div class="finehint">No payment now. KC replies with a price before anything is ordered.</div>
+    </div>
+
+    <div class="sent" id="quote-sent" hidden>
+      <div class="sent__mark">&#10003;</div>
+      <h2>Request sent.</h2>
+      <p>KC has your parts list and will reply with a price, a compatibility check and a build date. Usually within a day.</p>
+      <button type="button" class="btn btn--primary btn--lg" id="sent-done" style="margin-top:22px">Done</button>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer__top">
+    <div class="footer__brand">
+      <h3>Built one at a time in Walled Lake, Michigan.</h3>
+      <p>Questions about a spec, a repair or a trade-in? Reach out &mdash; you'll get the builder, not a queue.</p>
+    </div>
+    <div class="footer__links">
+      <div class="footer__col">
+        <span>SHOP</span>
+        <a href="shop.html">Pre-built PCs</a>
+        <a href="build-custom.html">Build custom</a>
+      </div>
+      <div class="footer__col">
+        <span>SUPPORT</span>
+        <a href="index.html">Warranty &amp; returns</a>
+        <a href="index.html">Shipping</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer__mark">KC's Custom Computers</div>
+  <div class="footer__legal">
+    <span>&copy; 2026 KC's Custom Computers &middot; Walled Lake, MI</span>
+    <span>Visa &middot; Mastercard &middot; Amex &middot; PayPal &middot; Apple Pay &middot; Shop Pay</span>
+  </div>
+</footer>
+
+<script src="nav.js"></script>
+<script src="components.js"></script>
+<script src="builder.js"></script>
+</body>
+</html>

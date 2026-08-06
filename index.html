@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KC's Custom Computers — Custom PCs, Metro Detroit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="builder.css">
+</head>
+<body>
+<nav class="nav">
+  <a class="nav__logo" href="index.html">KC's Custom Computers</a>
+  <button class="nav__toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false"><i></i></button>
+  <div class="nav__actions" id="nav-actions">
+    <a class="btn btn--ghost is-active" href="index.html">Home</a>
+    <a class="btn btn--ghost" href="shop.html">Shop Pre-Built</a>
+    <a class="btn btn--primary" href="build-custom.html">Build Custom</a>
+    <div class="nav__divider"></div>
+    <!-- Shopify: point these at /cart and /account -->
+    <a class="btn btn--icon" href="" aria-label="Cart"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></a>
+    <a class="btn btn--icon" href="" aria-label="Account"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a>
+  </div>
+</nav>
+
+<section class="hero" id="hero">
+  <div class="hero__stage" id="hero-stage">
+    <div class="hero__clip" id="clip-a"></div>
+    <div class="hero__clip" id="clip-b"></div>
+
+    <h1 class="hero__title" id="hero-title">Custom PC's,<br>Metro Detroit</h1>
+
+    <!-- component annotations, revealed at the end of clip 1 -->
+    <div class="callouts" id="callouts">
+      <svg viewBox="0 0 964 536" preserveAspectRatio="none">
+        <g vector-effect="non-scaling-stroke">
+          <line x1="300" y1="88"  x2="410" y2="36"/>
+          <line x1="620" y1="150" x2="714" y2="176"/>
+          <line x1="415" y1="190" x2="686" y2="252"/>
+          <line x1="495" y1="212" x2="686" y2="316"/>
+          <line x1="548" y1="305" x2="686" y2="392"/>
+          <line x1="150" y1="235" x2="98"  y2="80"/>
+          <line x1="335" y1="290" x2="132" y2="438"/>
+          <line x1="340" y1="362" x2="262" y2="498"/>
+          <line x1="455" y1="452" x2="618" y2="500"/>
+        </g>
+      </svg>
+
+      <div class="co-head">Handpicked<br>Components</div>
+
+      <i class="co-dot" style="left:31.1%; top:16.4%"></i>
+      <i class="co-dot" style="left:62.0%; top:23.9%"></i>
+      <i class="co-dot" style="left:43.0%; top:35.4%"></i>
+      <i class="co-dot" style="left:51.3%; top:39.6%"></i>
+      <i class="co-dot" style="left:56.8%; top:56.9%"></i>
+      <i class="co-dot" style="left:15.6%; top:43.8%"></i>
+      <i class="co-dot" style="left:34.8%; top:54.1%"></i>
+      <i class="co-dot" style="left:35.3%; top:67.5%"></i>
+      <i class="co-dot" style="left:47.2%; top:84.3%"></i>
+
+      <div class="co-label" style="left:40.5%; top:1.1%"><b>Liquid cooling</b><i>360mm AIO, hand-pasted</i></div>
+      <div class="co-label" style="left:74.5%; top:30.5%"><b>Intake fans</b><i>Three-fan front stack</i></div>
+      <div class="co-label" style="left:71.6%; top:44.4%"><b>Processor</b><i>Ryzen 7 &middot; 8C/16T</i></div>
+      <div class="co-label" style="left:71.6%; top:56.4%"><b>Memory</b><i>32GB DDR5-6000</i></div>
+      <div class="co-label" style="left:71.6%; top:70.5%"><b>Graphics card</b><i>RTX 5070 12GB</i></div>
+      <div class="co-label" style="left:4.5%;  top:12.5%"><b>Chassis</b><i>Airflow-first, glass side</i></div>
+      <div class="co-label" style="left:5.5%;  top:79.5%"><b>Motherboard</b><i>Bench-posted before install</i></div>
+      <div class="co-label" style="left:22.6%; top:92.0%"><b>Storage</b><i>1TB NVMe SSD</i></div>
+      <div class="co-label" style="left:64.5%; top:92.5%"><b>Power supply</b><i>750W 80+ Gold, modular</i></div>
+    </div>
+
+    <div class="hero__card" id="hero-card">
+      <div class="hero__card-kicker">PRIME SERIES &middot; READY TO SHIP</div>
+      <div class="hero__card-price">
+        <b>From $1,300</b>
+        <span class="pill pill--blue" id="card-tier">PRIME M SHOWN</span>
+      </div>
+      <div class="hero__card-specs" id="card-specs">
+        <div style="padding-top:14px">
+          <dl class="spec spec--sm"><dt>CPU</dt><dd>Ryzen 7 7700X &middot; 8C/16T</dd></dl>
+          <dl class="spec spec--sm"><dt>GPU</dt><dd>RTX 5070 12GB</dd></dl>
+          <dl class="spec spec--sm"><dt>Cooling</dt><dd>360mm AIO</dd></dl>
+          <dl class="spec spec--sm"><dt>Memory</dt><dd>32GB DDR5-6000</dd></dl>
+          <dl class="spec spec--sm"><dt>Storage</dt><dd>1TB NVMe SSD</dd></dl>
+          <dl class="spec spec--sm"><dt>Power</dt><dd>850W 80+ Gold</dd></dl>
+          <dl class="spec spec--sm"><dt>OS</dt><dd>Windows 11 Pro</dd></dl>
+          <div class="bench" style="margin-top:14px"><span class="bench__game">Fortnite</span><span class="bench__bar" style="flex:0 1 118px"></span><span class="bench__fps">215 fps</span></div>
+          <div class="bench"><span class="bench__game">CS2</span><span class="bench__bar bench__bar--3" style="flex:0 1 164px"></span><span class="bench__fps">300 fps</span></div>
+        </div>
+      </div>
+      <a class="btn btn--primary btn--block" style="height:46px;margin-top:14px" href="shop.html">Shop the Prime Series</a>
+      <div class="hero__card-foot">Local pickup in 24h &middot; ships nationwide</div>
+    </div>
+  </div>
+</section>
+
+<section class="manifesto">
+  <p>We deliver quality computers, built to last.</p>
+</section>
+
+<section class="section" id="prebuilts">
+  <div class="section__head">
+    <span class="eyebrow">Choose your spec</span>
+    <h2>Our pre-built options.</h2>
+    <a class="spacer" style="font:600 13.5px var(--ui);color:var(--blue)" href="shop.html">See all pre-builts &rarr;</a>
+  </div>
+
+  <div class="config">
+    <div class="config__shot">
+      <img id="cfg-img" src="images/prime-m-01.jpg" alt="Prime M build">
+      <span class="tag" id="cfg-tag">PRIME M — AS BUILT</span>
+    </div>
+    <div class="config__panel">
+      <div style="font:600 12px var(--ui);letter-spacing:.14em;color:var(--ink-3)">PRIME SERIES</div>
+      <div class="config__chips" id="cfg-chips"></div>
+      <div style="margin-top:22px" id="cfg-specs"></div>
+      <div style="margin-top:20px">
+        <div style="font:500 11.5px var(--ui);color:var(--ink-3);margin-bottom:10px">Typical 1080p frame rates, measured on the bench</div>
+        <div id="cfg-bench"></div>
+      </div>
+      <div style="margin-top:auto;padding-top:22px;border-top:1px solid var(--line-3);display:flex;align-items:center;gap:18px">
+        <div>
+          <div class="config__price" id="cfg-price">$1,900</div>
+          <div style="font:500 11.5px var(--ui);color:var(--ink-3)" id="cfg-sub">Prime M &middot; Win 11 Pro included</div>
+        </div>
+        <a class="btn btn--primary btn--lg" style="margin-left:auto" id="cfg-buy" href="product.html?id=prime-m">Reserve this build</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--tight" id="deals">
+  <div class="section__head">
+    <span class="eyebrow">One-time deals</span>
+    <h2>One of one. When it's gone, it's gone.</h2>
+  </div>
+  <div class="grid grid--4" id="deal-grid"></div>
+</section>
+
+<section class="section" id="build-your-own">
+  <div class="custom">
+    <span class="eyebrow">Build custom</span>
+    <h2>Spec your own machine, part by part.</h2>
+    <p>Pick the case, the chip, the card and the cooling. We price it as you go, sanity-check every combination for fit and headroom, then build and test it on the bench before it ships.</p>
+    <ol class="steps">
+      <li><div class="num">01</div><h3>Set your target</h3><p>Tell us the games and the resolution you play at. That sets the budget, not the other way around.</p></li>
+      <li><div class="num">02</div><h3>Choose your parts</h3><p>CPU, GPU, memory, storage, cooling and case &mdash; every option compatible by the time you see it.</p></li>
+      <li><div class="num">03</div><h3>Approve the quote</h3><p>One price, parts and labor itemized. Nothing gets ordered until you say go.</p></li>
+      <li><div class="num">04</div><h3>Built and proven</h3><p>Assembled, cable-managed, stress tested and benchmarked in your games before handoff.</p></li>
+    </ol>
+    <div class="custom__cta">
+      <a class="btn btn--primary btn--lg" href="build-custom.html">Start a custom build</a>
+      <span style="font:500 14px var(--ui);color:var(--ink-3)">Typical turnaround 5&ndash;7 days &middot; build labor from $50 with your own parts</span>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer__top">
+    <div class="footer__brand">
+      <h3>Built one at a time in Walled Lake, Michigan.</h3>
+      <p>Questions about a spec, a repair or a trade-in? Reach out &mdash; you'll get the builder, not a queue.</p>
+      <div class="footer__mail">
+        <span>hello@kccustom.pc</span>
+        <a class="btn btn--primary" href="build-custom.html">Get in touch</a>
+      </div>
+    </div>
+    <div class="footer__links">
+      <div class="footer__col">
+        <span>SHOP</span>
+        <a href="shop.html">Pre-built PCs</a>
+        <a href="build-custom.html">Build custom</a>
+      </div>
+      <div class="footer__col">
+        <span>SUPPORT</span>
+        <a href="index.html">Warranty &amp; returns</a>
+        <a href="index.html">Shipping</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer__mark">KC's Custom Computers</div>
+  <div class="footer__legal">
+    <span>&copy; 2026 KC's Custom Computers &middot; Walled Lake, MI</span>
+    <span>Visa &middot; Mastercard &middot; Amex &middot; PayPal &middot; Apple Pay &middot; Shop Pay</span>
+  </div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/scrolly-video@latest/dist/scrolly-video.js"></script>
+<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+<script src="nav.js"></script>
+<script src="products.js"></script>
+<script src="home.js"></script>
+</body>
+</html>
