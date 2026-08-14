@@ -47,13 +47,74 @@
 
   /* --------------------------------------------------------- products ---- */
 
+  /* ------------------------------------------------------- metafields ---- */
+
+  /* Presentation can live in Shopify instead of products.js, so KC can list a
+   * machine without anyone touching this repo. Namespace `specs`, and each
+   * field has to be ticked "Storefront access" in Admin or it reads as null.
+   *
+   * The order here is the order the spec table renders in, and the home
+   * configurator shows the first six — so CPU..Power come before Case and OS.
+   */
+  var SPEC_FIELDS = [
+    ['cpu',     'CPU'],
+    ['cooler',  'Cooler'],
+    ['gpu',     'GPU'],
+    ['ram',     'Memory'],
+    ['storage', 'Storage'],
+    ['psu',     'Power'],
+    ['case',    'Case'],
+    ['os',      'OS']
+  ];
+  // best_for fills the tagline; fps fills the benchmark bars
+  var META_KEYS = SPEC_FIELDS.map(function (f) { return f[0]; }).concat(['best_for', 'fps']);
+
+  var META_IDS = META_KEYS.map(function (k) {
+    return '{namespace: "specs", key: "' + k + '"}';
+  }).join(' ');
+
   var PRODUCT_FIELDS = [
     'id handle title availableForSale tags',
     'description',
     'priceRange { minVariantPrice { amount currencyCode } }',
     'images(first: 8) { edges { node { url altText } } }',
+    'metafields(identifiers: [' + META_IDS + ']) { key value }',
     'variants(first: 1) { edges { node { id availableForSale quantityAvailable price { amount currencyCode } } } }'
   ].join(' ');
+
+  // Shopify returns one slot per identifier, null for the ones not set.
+  function metaMap(nodes) {
+    var out = {};
+    (nodes || []).forEach(function (m) {
+      if (m && m.key && String(m.value).trim()) out[m.key] = String(m.value).trim();
+    });
+    return out;
+  }
+
+  /* Benchmarks have no natural Shopify field, so `fps` is free text:
+   *   Fortnite:215, CS2:300, Warzone:172
+   * A JSON array of [game, fps] pairs is accepted too. Anything unparseable
+   * yields nothing rather than a broken row.
+   */
+  function parseFps(raw) {
+    if (!raw) return [];
+    if (raw.charAt(0) === '[') {
+      try {
+        var j = JSON.parse(raw);
+        if (Object.prototype.toString.call(j) === '[object Array]') {
+          return j.filter(function (r) { return r && r.length >= 2; })
+                  .map(function (r) { return [String(r[0]), Number(r[1]) || 0]; });
+        }
+      } catch (e) { /* fall through to the plain form */ }
+    }
+    return raw.split(',').map(function (pair) {
+      var i = pair.lastIndexOf(':');
+      if (i < 1) return null;
+      var game = pair.slice(0, i).trim();
+      var n = parseFloat(pair.slice(i + 1));
+      return (game && isFinite(n)) ? [game, n] : null;
+    }).filter(Boolean);
+  }
 
   var PRODUCTS_QUERY =
     'query Products($first: Int!) { products(first: $first) { edges { node { ' +
@@ -84,6 +145,12 @@
       return p.id === id;
     })[0] || {};
 
+    var meta = metaMap(node.metafields);
+    var metaSpecs = SPEC_FIELDS
+      .filter(function (f) { return meta[f[0]]; })
+      .map(function (f) { return [f[1], meta[f[0]]]; });
+    var metaFps = parseFps(meta.fps);
+
     return {
       id: id,
       handle: node.handle,
@@ -103,11 +170,17 @@
       // The catalogue art is what the design was built against; Shopify's own
       // photography is the fallback for anything not in products.js.
       images: (local.images && local.images.length) ? local.images : images,
-      // presentation extras still come from products.js, keyed by catalogue id
-      tagline: local.tagline || '',
+      /* Presentation: Shopify metafields first, products.js second.
+       *
+       * Each block falls back on its own — a product can carry its specs in
+       * Admin while its benchmarks still come from the catalogue. Specs are
+       * all-or-nothing within the block on purpose: a table half from Admin
+       * and half from the repo would be a nightmare to debug.
+       */
+      tagline: meta.best_for || local.tagline || '',
       blurb: local.blurb || node.description || '',
-      specs: local.specs || [],
-      fps: local.fps || []
+      specs: metaSpecs.length ? metaSpecs : (local.specs || []),
+      fps: metaFps.length ? metaFps : (local.fps || [])
     };
   }
 

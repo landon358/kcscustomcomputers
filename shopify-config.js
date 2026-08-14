@@ -39,6 +39,26 @@ window.SHOPIFY_CONFIG = {
     deal:  'my-pcs'        // "One Time Deals"  -> the one-time deals row
   },
 
+  /* ---------------------------------------------------------------------
+   * Adding a product without touching this repo
+   *
+   * 1. Create it in Shopify and add it to one of the collections above —
+   *    a product in neither will not appear on the site at all.
+   * 2. Give it these metafields, namespace `specs`. Each one must have
+   *    "Storefront access" ticked in Admin or it reads back as null:
+   *
+   *      cpu  cooler  gpu  ram  storage  psu  case  os
+   *          — one line of text each, e.g. ram = "32GB DDR5-6000"
+   *      best_for
+   *          — the tagline, e.g. "The one most people should buy."
+   *      fps
+   *          — benchmark bars, as "Fortnite:215, CS2:300, Warzone:172"
+   *
+   * Anything left blank falls back to that product's entry in products.js,
+   * matched through the handles map below. A product with neither still
+   * sells fine — it just shows an empty spec table.
+   * ------------------------------------------------------------------- */
+
   /* The live products were listed before this site existed, so their handles
    * do not match the catalogue ids in products.js. This maps one to the other.
    * Shopify stays authoritative for price, stock and variant IDs; products.js
