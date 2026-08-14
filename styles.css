@@ -711,6 +711,29 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
 
 .block { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 24px; }
 .block__label { font: 600 11px var(--ui); letter-spacing: 0.18em; color: var(--ink-4); }
+.block__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.restabs { display: flex; gap: 2px; }
+.restab {
+  font: 600 12px var(--ui);
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.restab.is-on { background: var(--ink); color: #FFFFFF; }
+/* A resolution with no numbers yet still lists the games, so the switch shows
+   what is coming rather than collapsing to nothing. */
+.bench.is-pending .bench__bar { background: var(--line-3); }
+.bench.is-pending .bench__fps { color: var(--ink-4); }
+.benchnote { margin-top: 12px; font: 400 11.5px var(--ui); color: var(--ink-4); }
 .product__blurb {
   margin: 26px 0 0;
   font: 400 15px/1.65 var(--ui);

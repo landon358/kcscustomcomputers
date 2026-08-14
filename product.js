@@ -33,6 +33,59 @@
 
   /* ------------------------------------------------------ buy module ---- */
 
+    /* Benchmarks, per resolution.
+   *
+   * 1080p is the set every machine has. 1440p and 4K arrive as KC measures
+   * them, so a resolution with no numbers yet still lists the games with muted
+   * bars and says what it is waiting for — the switch shows what is coming
+   * instead of collapsing to an empty box.
+   */
+  var RES = [
+    ['1080p', 'fps',     ''],
+    ['1440p', 'fps1440', '1440p'],
+    ['4K',    'fps4k',   '4K']
+  ];
+  var res = 'fps';
+
+  function renderBench(prod) {
+    $('p-res').innerHTML = RES.map(function (r) {
+      return '<button type="button" role="tab" class="restab' + (r[1] === res ? ' is-on' : '') +
+        '" data-res="' + r[1] + '" aria-selected="' + (r[1] === res) + '">' + r[0] + '</button>';
+    }).join('');
+
+    var rows = prod[res] || [];
+    var noData = !rows.length;
+    // fall back to the 1080p line-up so the rows stay put across the switch
+    if (noData) {
+      rows = (prod.fps || []).map(function (f) { return [f[0], null]; });
+    }
+
+    var max = rows.reduce(function (a, f) { return Math.max(a, f[1] || 0); }, 1);
+    $('p-bench').innerHTML = rows.map(function (f, i) {
+      var has = typeof f[1] === 'number';
+      return '<div class="bench' + (has ? '' : ' is-pending') + '">' +
+        '<span class="bench__game">' + f[0] + '</span>' +
+        '<span class="bench__bar' + (i === 1 ? ' bench__bar--2' : i === 2 ? ' bench__bar--3' : '') +
+        '" style="flex:0 1 ' + (has ? Math.round(f[1] / max * 210) : 210) + 'px"></span>' +
+        '<span class="bench__fps">' + (has ? f[1] + ' fps' : 'Not measured yet') + '</span></div>';
+    }).join('');
+
+    var label = (RES.filter(function (r) { return r[1] === res; })[0] || [])[2];
+    $('p-bench-note').textContent = rows.length === 0
+      ? 'No benchmarks recorded for this build yet.'
+      : (noData
+          ? 'Numbers pending — this machine is queued for ' + label + ' testing.'
+          : 'Averages over a 10-minute run, high preset, no upscaling.');
+  }
+
+  // the tabs are rebuilt on every render, so listen on the container
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest('.restab');
+    if (!t) return;
+    res = t.getAttribute('data-res');
+    renderBench(p);
+  });
+
   function renderBuy() {
     var buy = $('p-buy'), note = $('p-note');
 
@@ -113,13 +166,7 @@
       return '<dl class="spec"><dt>' + s[0] + '</dt><dd>' + s[1] + '</dd></dl>';
     }).join('');
 
-    var max = p.fps.reduce(function (a, f) { return Math.max(a, f[1]); }, 1);
-    $('p-bench').innerHTML = p.fps.map(function (f, i) {
-      return '<div class="bench"><span class="bench__game">' + f[0] + '</span>' +
-        '<span class="bench__bar' + (i === 1 ? ' bench__bar--2' : i === 2 ? ' bench__bar--3' : '') +
-        '" style="flex:0 1 ' + Math.round(f[1] / max * 210) + 'px"></span>' +
-        '<span class="bench__fps">' + f[1] + ' fps</span></div>';
-    }).join('');
+    renderBench(p);
 
     $('p-related').innerHTML = window.PRODUCTS
       .filter(function (x) { return x.id !== p.id; })

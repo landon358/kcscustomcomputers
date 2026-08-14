@@ -56,8 +56,13 @@ window.SHOPIFY_CONFIG = {
    *          — one line of text each, e.g. ram = "32GB DDR5-6000"
    *      best_for
    *          — the tagline, e.g. "The one most people should buy."
-   *      fps
-   *          — benchmark bars, as "Fortnite:215, CS2:300, Warzone:172"
+   *      fps  fps_1440  fps_4k
+   *          — benchmark bars, one field per resolution tab on the product
+   *            page, each written as "Fortnite:215, CS2:300, Warzone:172".
+   *            Only fps (1080p) is needed. A resolution left blank shows its
+   *            games with muted bars and "queued for 1440p testing", so the
+   *            tab is honest rather than empty — fill it in when the numbers
+   *            exist and it starts showing them.
    *
    * Anything left blank falls back to that product's entry in products.js,
    * matched through the handles map below. A product with neither still

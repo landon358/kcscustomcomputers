@@ -66,8 +66,12 @@
     ['case',    'Case'],
     ['os',      'OS']
   ];
-  // best_for fills the tagline; fps fills the benchmark bars
-  var META_KEYS = SPEC_FIELDS.map(function (f) { return f[0]; }).concat(['best_for', 'fps']);
+  // best_for fills the tagline; the three fps fields fill the benchmark bars,
+  // one per resolution tab on the product page.
+  var FPS_FIELDS = [['fps', 'fps'], ['fps_1440', 'fps1440'], ['fps_4k', 'fps4k']];
+  var META_KEYS = SPEC_FIELDS.map(function (f) { return f[0]; })
+    .concat(['best_for'])
+    .concat(FPS_FIELDS.map(function (f) { return f[0]; }));
 
   var META_IDS = META_KEYS.map(function (k) {
     return '{namespace: "specs", key: "' + k + '"}';
@@ -149,7 +153,13 @@
     var metaSpecs = SPEC_FIELDS
       .filter(function (f) { return meta[f[0]]; })
       .map(function (f) { return [f[1], meta[f[0]]]; });
-    var metaFps = parseFps(meta.fps);
+    // Each resolution falls back on its own, so KC can add 1440p numbers
+    // without having to restate the 1080p ones.
+    var fps = {};
+    FPS_FIELDS.forEach(function (f) {
+      var parsed = parseFps(meta[f[0]]);
+      fps[f[1]] = parsed.length ? parsed : (local[f[1]] || []);
+    });
 
     return {
       id: id,
@@ -180,7 +190,9 @@
       tagline: meta.best_for || local.tagline || '',
       blurb: local.blurb || node.description || '',
       specs: metaSpecs.length ? metaSpecs : (local.specs || []),
-      fps: metaFps.length ? metaFps : (local.fps || [])
+      fps: fps.fps,
+      fps1440: fps.fps1440,
+      fps4k: fps.fps4k
     };
   }
 
