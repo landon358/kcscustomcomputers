@@ -382,3 +382,23 @@
   .tabs { overflow-x: auto; }
   .modal__card { padding: 22px 20px 24px; }
 }
+
+/* The case step shows the stocked chassis first and a description box after,
+   so the two need a visible seam between them. */
+.freetext__or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 600 11px var(--ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 12px;
+}
+.freetext__or::before,
+.freetext__or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}

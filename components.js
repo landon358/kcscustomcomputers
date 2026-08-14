@@ -82,7 +82,12 @@ window.CATEGORIES = [
   },
   {
     id: 'case', label: 'Case', short: 'Case', freeText: true,
-    blurb: "Tell us the look you want — size, colour, glass, a specific model. We'll confirm it fits your parts.",
-    placeholder: 'e.g. white mid tower with a glass side panel, or Lian Li O11 Dynamic'
+    blurb: "Pick one of the chassis we stock, or describe the look you want and we'll confirm it fits your parts.",
+    placeholder: 'e.g. white mid tower with a glass side panel, or a specific model you have in mind',
+    options: [
+      { id: 'case-black-rgb',  name: 'Lian Li Vector V100',       note: 'Mid tower · 4 × ARGB fans · glass side', img: P + 'case-black-rgb-tower.png' },
+      { id: 'case-black-pano', name: 'Montech XR ATX Mid Tower',  note: 'Panoramic glass · 3 × ARGB fans',        img: P + 'case-black-panoramic.png' },
+      { id: 'case-white-pano', name: 'Lian Li Vector V100 White', note: 'Mid tower · 4 × ARGB fans · front USB-C', img: P + 'case-white-panoramic.png' }
+    ]
   }
 ];
