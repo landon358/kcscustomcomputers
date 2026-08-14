@@ -59,6 +59,14 @@
     'query Products($first: Int!) { products(first: $first) { edges { node { ' +
     PRODUCT_FIELDS + ' } } } }';
 
+  // Collections are the authority on which section a machine belongs to, read
+  // in Shopify's manual sort order so Admin controls the running order too.
+  var SECTIONS_QUERY =
+    'query Sections($prime: String!, $deal: String!, $first: Int!) {' +
+    '  prime: collection(handle: $prime) { products(first: $first, sortKey: MANUAL) { nodes { ' + PRODUCT_FIELDS + ' } } }' +
+    '  deal:  collection(handle: $deal)  { products(first: $first, sortKey: MANUAL) { nodes { ' + PRODUCT_FIELDS + ' } } }' +
+    '}';
+
   // The live listings predate this site, so their handles are not the
   // catalogue ids. CFG.handles maps one onto the other; anything unmapped
   // falls through on its own handle so a newly added product still appears.
@@ -66,7 +74,8 @@
   function siteId(handle) { return HANDLES[handle] || handle; }
 
   // Shopify product -> the shape the rest of the site already renders.
-  function normalise(node) {
+  // `section` is the collection the node came from, when it came from one.
+  function normalise(node, section) {
     var variant = node.variants.edges.length ? node.variants.edges[0].node : null;
     var images = node.images.edges.map(function (e) { return e.node.url; });
     var tags = (node.tags || []).map(function (t) { return String(t).toLowerCase(); });
@@ -81,9 +90,10 @@
       // Titles in Admin are plain ("Ryzen 5 5600X RTX 4060"); the catalogue
       // carries the typeset ones the design expects.
       name: local.name || node.title,
-      // No tags on the live products, so the catalogue decides the section a
-      // machine belongs to. Tags still win if they are ever added.
-      kind: tags.indexOf('deal') !== -1 ? 'deal' : (local.kind || 'prime'),
+      // Collection membership first, then a tag, then the catalogue. The live
+      // products carry no tags, so without the collections everything would
+      // read as a prime and the deals row would come up empty.
+      kind: section || (tags.indexOf('deal') !== -1 ? 'deal' : (local.kind || 'prime')),
       popular: tags.indexOf('popular') !== -1 || !!local.popular,
       price: Math.round(parseFloat(node.priceRange.minVariantPrice.amount)),
       currency: node.priceRange.minVariantPrice.currencyCode,
@@ -101,16 +111,48 @@
     };
   }
 
+  // Both grids read as a price ladder — the shop copy sells "from $1,300" and
+  // the cards step up from there. Admin's manual order is not that ladder, and
+  // rather than ask KC to keep two orderings in sync, price decides.
+  function ladder(list) {
+    return list.slice().sort(function (a, b) { return a.price - b.price; });
+  }
+
+  // Every published product, used when the collections are missing or empty.
+  function loadFlat() {
+    return query(PRODUCTS_QUERY, { first: 50 }).then(function (data) {
+      var list = data.products.edges.map(function (e) { return normalise(e.node); });
+      if (!list.length) throw new Error('no products published to this channel');
+      return ladder(list);
+    });
+  }
+
   // Resolves to a product array either way: Shopify when configured and
   // reachable, the static catalogue otherwise. Never rejects.
   function loadProducts() {
     if (!configured) return Promise.resolve(window.PRODUCTS_STATIC.slice());
 
-    return query(PRODUCTS_QUERY, { first: 50 })
-      .then(function (data) {
-        var list = data.products.edges.map(function (e) { return normalise(e.node); });
-        if (!list.length) throw new Error('no products published to this channel');
-        return list;
+    var C = CFG.collections || {};
+    var byCollection = (C.prime || C.deal)
+      ? query(SECTIONS_QUERY, { prime: C.prime || '', deal: C.deal || '', first: 40 })
+          .then(function (data) {
+            var list = [];
+            ['prime', 'deal'].forEach(function (kind) {
+              var col = data[kind];
+              if (!col) return;
+              col.products.nodes.forEach(function (n) { list.push(normalise(n, kind)); });
+            });
+            // A renamed or unpublished collection resolves to null rather than
+            // erroring, so treat an empty result as a miss and go flat.
+            if (!list.length) throw new Error('collections empty or not published to this channel');
+            return ladder(list);
+          })
+      : Promise.reject(new Error('no collections configured'));
+
+    return byCollection
+      .catch(function (err) {
+        console.warn('[shopify] collections unavailable (' + err.message + '), reading all products');
+        return loadFlat();
       })
       .catch(function (err) {
         console.warn('[shopify] falling back to static catalogue:', err.message);

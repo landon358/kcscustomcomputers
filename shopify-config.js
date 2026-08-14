@@ -29,6 +29,16 @@ window.SHOPIFY_CONFIG = {
   // domain, which redirects to whichever login the store has enabled.
   accountUrl: '',
 
+  /* Which collection feeds which section of the site. Membership in Shopify
+   * decides where a machine appears, so listing a new deal in Admin is enough
+   * — no code change here. Both are read in Shopify's manual sort order, so
+   * dragging products around in Admin reorders the site.
+   */
+  collections: {
+    prime: 'pre-builts',   // "Pre-Builts"      -> shop grid + home configurator
+    deal:  'my-pcs'        // "One Time Deals"  -> the one-time deals row
+  },
+
   /* The live products were listed before this site existed, so their handles
    * do not match the catalogue ids in products.js. This maps one to the other.
    * Shopify stays authoritative for price, stock and variant IDs; products.js
