@@ -59,27 +59,41 @@
     'query Products($first: Int!) { products(first: $first) { edges { node { ' +
     PRODUCT_FIELDS + ' } } } }';
 
+  // The live listings predate this site, so their handles are not the
+  // catalogue ids. CFG.handles maps one onto the other; anything unmapped
+  // falls through on its own handle so a newly added product still appears.
+  var HANDLES = CFG.handles || {};
+  function siteId(handle) { return HANDLES[handle] || handle; }
+
   // Shopify product -> the shape the rest of the site already renders.
   function normalise(node) {
     var variant = node.variants.edges.length ? node.variants.edges[0].node : null;
     var images = node.images.edges.map(function (e) { return e.node.url; });
     var tags = (node.tags || []).map(function (t) { return String(t).toLowerCase(); });
+    var id = siteId(node.handle);
     var local = (window.PRODUCTS_STATIC || []).filter(function (p) {
-      return p.id === node.handle;
+      return p.id === id;
     })[0] || {};
 
     return {
-      id: node.handle,
-      name: node.title,
-      kind: tags.indexOf('deal') !== -1 ? 'deal' : 'prime',
+      id: id,
+      handle: node.handle,
+      // Titles in Admin are plain ("Ryzen 5 5600X RTX 4060"); the catalogue
+      // carries the typeset ones the design expects.
+      name: local.name || node.title,
+      // No tags on the live products, so the catalogue decides the section a
+      // machine belongs to. Tags still win if they are ever added.
+      kind: tags.indexOf('deal') !== -1 ? 'deal' : (local.kind || 'prime'),
       popular: tags.indexOf('popular') !== -1 || !!local.popular,
       price: Math.round(parseFloat(node.priceRange.minVariantPrice.amount)),
       currency: node.priceRange.minVariantPrice.currencyCode,
       inStock: node.availableForSale,
       stockNote: local.stockNote,
       variantId: variant ? variant.id : null,
-      images: images.length ? images : (local.images || []),
-      // presentation extras still come from products.js, keyed by handle
+      // The catalogue art is what the design was built against; Shopify's own
+      // photography is the fallback for anything not in products.js.
+      images: (local.images && local.images.length) ? local.images : images,
+      // presentation extras still come from products.js, keyed by catalogue id
       tagline: local.tagline || '',
       blurb: local.blurb || node.description || '',
       specs: local.specs || [],
