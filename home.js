@@ -52,13 +52,116 @@
     layer.style.top = (H - h) / 2 + 'px';
   }
 
-  window.addEventListener('resize', function () { fitMedia(); fitCallouts(); });
+  // A resize changes the band height but not the scroll position, so both the
+  // idle short-circuit and the every-tenth-frame sample gate would hold the old
+  // plate indefinitely. Dropping lastFill defeats both.
+  window.addEventListener('resize', function () { fitMedia(); fitCallouts(); lastFill = null; });
+
+  /* --------------------------------------------------- letterbox plate ---- */
+
+  // The stage contains the frame rather than covering it, so a band is left
+  // above it and below it. The upper band is filled from the frame row it
+  // actually touches, so the bench reads as one field rather than a video
+  // sitting in a box.
+  var SITE = [250, 250, 250];   // var(--plate)
+  var probe = null, plateRow = null, lastFill = null, pageBgSet = false, sampleTick = 0;
+
+  var rgb = function (c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; };
+  var lerp = function (a, b, k) {
+    return a.map(function (v, i) { return Math.round(v + (b[i] - v) * k); });
+  };
+
+  // A frame row is not one colour across its width — the case is dark at the
+  // left, the bench pale at the right — so sample N columns and take the median
+  // rather than trusting whatever single pixel happens to sit in the middle.
+  function sampleRow(live, vw, vh, frac) {
+    var N = 16;
+    if (!probe) { probe = document.createElement('canvas'); probe.width = N; probe.height = 1; }
+    var g = probe.getContext('2d', { willReadFrequently: true });
+    var band = Math.max(1, Math.round(vh * 0.006));
+    var y = Math.max(0, Math.min(vh - band, Math.round(vh * frac)));
+
+    g.clearRect(0, 0, N, 1);
+    g.drawImage(live, 0, y, vw, band, 0, 0, N, 1);
+    var d = g.getImageData(0, 0, N, 1).data;
+
+    // an unpainted canvas reads as transparent black — reject the sample
+    // rather than latching the plate to #000
+    var alpha = 0, dark = 0, cols = [], i, c;
+    for (i = 0; i < N; i++) {
+      alpha += d[i * 4 + 3];
+      c = [d[i * 4], d[i * 4 + 1], d[i * 4 + 2]];
+      cols.push(c);
+      if (c[0] < 12 && c[1] < 12 && c[2] < 12) dark++;
+    }
+    if (alpha / N < 250 || dark === N) return null;
+
+    return [0, 1, 2].map(function (o) {
+      var v = cols.map(function (x) { return x[o]; }).sort(function (a, b) { return a - b; });
+      return Math.round((v[(N >> 1) - 1] + v[N >> 1]) / 2);
+    });
+  }
+
+  function paintPlate(p) {
+    var stage = $('hero-stage');
+    if (!stage) return;
+
+    // scrolly-video hides its <video> and paints into a canvas, and the video
+    // comes first in the DOM — ask for the canvas explicitly, or the probe
+    // reads a display:none element.
+    var host = $(p >= SEAM ? 'clip-b' : 'clip-a');
+    var live = host && (host.querySelector('canvas') || host.querySelector('video'));
+    var vw = live && (live.videoWidth || live.width);
+    var vh = live && (live.videoHeight || live.height);
+
+    // one sample every ten frames is plenty — the plate tone drifts slowly
+    sampleTick++;
+    if (!live || !vw || !vh || (sampleTick % 10 && plateRow && lastFill)) return;
+
+    try {
+      var row = sampleRow(live, vw, vh, 0.002);
+      if (row) plateRow = row;
+    } catch (e) { /* not decodable yet — keep the last good row */ }
+    if (!plateRow) return;
+
+    var sh = stage.clientHeight, ar = vw / vh;
+    var cw = Math.min(stage.clientWidth, sh * ar);
+    var top = Math.round((sh - cw / ar) / 2);
+
+    // settles onto the site's own plate colour as the hero releases
+    var exit = smooth(clamp((p - 0.88) / 0.12));
+    var topCol = rgb(lerp(plateRow, SITE, exit));
+    // Below the frame the page just becomes the page — no sampled bench tone,
+    // so there is no grey bar hanging under the hero. A visible seam at the
+    // frame's bottom edge is the accepted trade.
+    var footCol = rgb(SITE);
+    var fill = 'linear-gradient(to bottom, ' + topCol + ' 0px, ' + topCol + ' ' + top +
+      'px, ' + footCol + ' ' + top + 'px, ' + footCol + ' 100%)';
+    if (fill !== lastFill) { lastFill = fill; stage.style.background = fill; }
+
+    // The sampled tone belongs to the bands inside the stage only — painting it
+    // onto body/html put a bench-grey field under the whole page.
+    if (!pageBgSet) {
+      pageBgSet = true;
+      document.documentElement.style.background = footCol;
+      document.body.style.background = footCol;
+    }
+  }
 
   /* ------------------------------------------------------- rAF driver ---- */
 
   var coItems = null;
+  var lastP = null, lastOnB = null, lastWant = -1, loopWarned = false;
 
   function frame(time) {
+    try { tick(time); }
+    catch (err) {
+      if (!loopWarned) { loopWarned = true; console.error('[hero loop]', err); }
+    }
+    finally { requestAnimationFrame(frame); }
+  }
+
+  function tick(time) {
     if (!lenis && window.Lenis) {
       lenis = new window.Lenis({
         duration: 1.15,
@@ -73,33 +176,35 @@
     if (Math.abs(target - eased) < 0.0002) eased = target;
     var p = eased;
 
-    if (sv) {
-      sv[0].setTargetTimePercent(HEAD_TRIM + clamp(p / SEAM) * (1 - HEAD_TRIM), { jump: true });
-      sv[1].setTargetTimePercent(clamp((p - SEAM) / (1 - SEAM)), { jump: true });
+    // Idle short-circuit. The seek, the pixel probe and the style writes below
+    // only matter when the scroll position actually moved, and running them on
+    // every frame at rest was most of the cost. At scrollY 0 the position never
+    // changes, though, so keep going until the plate has landed once — gating
+    // on the scroll delta alone left the hero on its fallback grey until the
+    // visitor scrolled.
+    if (lastP !== null && Math.abs(p - lastP) < 0.0004 && plateRow && lastFill) return;
+    lastP = p;
+
+    // build clip 2 a little before it is needed, so the seam is not a stall
+    if (p > SEAM - 0.22) ensureClip2();
+
+    // Only the clip on screen gets seeked — driving both doubles the decode
+    // cost for a frame nobody sees.
+    var onB = p >= SEAM;
+    var want = onB ? clamp((p - SEAM) / (1 - SEAM))
+                   : HEAD_TRIM + clamp(p / SEAM) * (1 - HEAD_TRIM);
+    if (sv && sv[onB ? 1 : 0] &&
+        (onB !== lastOnB || Math.abs(want - lastWant) > 0.0006)) {
+      lastOnB = onB; lastWant = want;
+      sv[onB ? 1 : 0].setTargetTimePercent(want, { jump: true });
     }
 
     // hard cut at the seam — clip 1's last frame straight into clip 2's first
-    var mix = p >= SEAM ? 1 : 0;
+    var mix = onB ? 1 : 0;
     var b = $('clip-b');
     if (b) b.style.opacity = mix;
 
-    // page background tracks the plate colour of whichever clip is showing
-    var host = $(mix > 0.5 ? 'clip-b' : 'clip-a');
-    var canvas = host && host.querySelector('canvas');
-    if (canvas && canvas.width) {
-      try {
-        var ctx = canvas.getContext('2d', { willReadFrequently: true });
-        var d = ctx.getImageData(Math.floor(canvas.width / 2), 2, 1, 1).data;
-        if (d[3] > 0) {
-          var col = 'rgb(' + d[0] + ',' + d[1] + ',' + d[2] + ')';
-          if (col !== frame.lastPlate) {
-            frame.lastPlate = col;
-            document.documentElement.style.background = col;
-            document.body.style.background = col;
-          }
-        }
-      } catch (e) { /* tainted canvas — keep the static plate colour */ }
-    }
+    paintPlate(p);
 
     // headline clears out as soon as the build starts moving
     var out = 1 - smooth(clamp((p - 0.01) / 0.13));
@@ -133,24 +238,48 @@
       det.style.opacity = e;
       if (tier) tier.style.opacity = smooth(clamp((p - 0.88) / 0.1));
     }
-
-    requestAnimationFrame(frame);
   }
 
   /* ------------------------------------------------------- video init ---- */
+
+  // scrolly-video's WebCodecs path decodes every frame into memory up front —
+  // 289 frames at 1928x1072 is roughly 900MB per clip. Desktop absorbs it;
+  // a phone does not, and the tab either loses the decode or gets killed.
+  // On small screens fall back to seeking the <video> element instead.
+  var SMALL = window.matchMedia('(max-width: 860px)');
+
+  function makeClip(i) {
+    return new window.ScrollyVideo({
+      scrollyVideoContainer: $(i === 0 ? 'clip-a' : 'clip-b'),
+      src: CLIPS[i],
+      cover: false, sticky: false, full: false, trackScroll: false,
+      transitionSpeed: 12, frameThreshold: 0.02,
+      useWebCodecs: !SMALL.matches
+    });
+  }
+
+  // Clip 2 is invisible until the seam at 50%. On a phone, building it up
+  // front doubles both the memory bill and the initial download for nothing,
+  // so hold it until the scroll gets close.
+  function ensureClip2() {
+    if (!sv || sv[1] || !window.ScrollyVideo) return;
+    sv[1] = makeClip(1);
+    fitMedia();
+    // it sits at t=0 until the seam; nudge it so it actually decodes
+    setTimeout(function () {
+      if (!sv[1]) return;
+      sv[1].setTargetTimePercent(0.35, { jump: true });
+      setTimeout(function () {
+        if (sv[1]) sv[1].setTargetTimePercent(0, { jump: true });
+      }, 400);
+    }, 300);
+  }
 
   function initVideo() {
     var a = $('clip-a'), b = $('clip-b');
     if (!window.ScrollyVideo || !a || !b) { setTimeout(initVideo, 250); return; }
 
-    sv = CLIPS.map(function (src, i) {
-      return new window.ScrollyVideo({
-        scrollyVideoContainer: i === 0 ? a : b,
-        src: src,
-        cover: false, sticky: false, full: false, trackScroll: false,
-        transitionSpeed: 12, frameThreshold: 0.02
-      });
-    });
+    sv = [makeClip(0), null];
 
     readScroll();
     eased = target;
@@ -162,11 +291,8 @@
       mo.observe(n, { attributes: true, attributeFilter: ['style', 'width', 'height'], childList: true, subtree: true });
     });
 
-    // clip 2 sits at t=0 through the whole first half; nudge it so it decodes
-    setTimeout(function () {
-      sv[1].setTargetTimePercent(0.35, { jump: true });
-      setTimeout(function () { sv[1].setTargetTimePercent(0, { jump: true }); }, 400);
-    }, 600);
+    // desktop has the headroom, so keep clip 2 warm from the start
+    if (!SMALL.matches) setTimeout(ensureClip2, 600);
   }
 
   /* ----------------------------------------------------- configurator ---- */
