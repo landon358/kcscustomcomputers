@@ -221,17 +221,32 @@
     var title = $('hero-title');
     if (title) title.style.opacity = out;
 
-    // component annotations land on clip 1's exploded end state
+    // annotations ride the exploded beat, then clear as the parts go in
     var layer = $('callouts');
-    var shown = smooth(clamp((p - 0.34) / 0.07)) * (1 - smooth(clamp((p - 0.455) / 0.05)));
+    var CO_IN = 0.40, CO_OUT = 0.50;
+    var shown = smooth(clamp((p - CO_IN) / 0.035)) * (1 - smooth(clamp((p - CO_OUT) / 0.045)));
     if (layer) {
       layer.style.opacity = shown;
       layer.style.visibility = shown > 0.001 ? 'visible' : 'hidden';
-      if (!coItems) coItems = Array.prototype.slice.call(layer.querySelectorAll('.co-label, .co-dot, .co-head'));
-      coItems.forEach(function (el, i) {
-        var s = smooth(clamp((p - 0.34 - (i % 10) * 0.006) / 0.055)) * (1 - smooth(clamp((p - 0.455) / 0.05)));
-        el.style.opacity = s;
-        el.style.transform = 'translateY(' + ((1 - s) * 7) + 'px)';
+      if (!coItems) {
+        // stagger by row — the heading, then each label with the dot it points
+        // at, top down — rather than by flat node order, which cascades in a
+        // sequence that has nothing to do with what the eye is following
+        coItems = [];
+        var heads = layer.querySelectorAll('.co-head, .co-sub');
+        Array.prototype.forEach.call(heads, function (el) { coItems.push([el, 0]); });
+        var labels = layer.querySelectorAll('.co-label');
+        var dots = layer.querySelectorAll('.co-dot');
+        Array.prototype.forEach.call(labels, function (el, i) {
+          coItems.push([el, i + 1]);
+          if (dots[i]) coItems.push([dots[i], i + 1]);
+        });
+      }
+      coItems.forEach(function (pair) {
+        var s = smooth(clamp((p - CO_IN - pair[1] * 0.0025) / 0.035)) *
+                (1 - smooth(clamp((p - CO_OUT) / 0.045)));
+        pair[0].style.opacity = s;
+        pair[0].style.transform = 'translateY(' + ((1 - s) * 7) + 'px)';
       });
     }
 
@@ -253,9 +268,11 @@
   /* ------------------------------------------------------- video init ---- */
 
   // scrolly-video's WebCodecs path decodes every frame into memory up front —
-  // 289 frames at 1928x1076 is roughly 900MB per clip. Desktop absorbs it;
-  // a phone does not, and the tab either loses the decode or gets killed.
-  // On small screens fall back to seeking the <video> element instead.
+  // 289 frames at 1928x1076 is roughly 900MB per clip, and the two clips are
+  // 27MB to download before any of that starts. A phone will not carry it: the
+  // scrub stuttered, the decode got dropped, and the tab was killed outright on
+  // smaller devices. Below the breakpoint the hero is a still of the finished
+  // build instead (.hero__still), and nothing here runs at all.
   var SMALL = window.matchMedia('(max-width: 860px)');
 
   function makeClip(i) {
@@ -286,6 +303,9 @@
   }
 
   function initVideo() {
+    // The still is doing the job; do not fetch or decode a frame of video.
+    if (SMALL.matches) return;
+
     var a = $('clip-a'), b = $('clip-b');
     if (!window.ScrollyVideo || !a || !b) { setTimeout(initVideo, 250); return; }
 
@@ -302,8 +322,14 @@
     });
 
     // desktop has the headroom, so keep clip 2 warm from the start
-    if (!SMALL.matches) setTimeout(ensureClip2, 600);
+    setTimeout(ensureClip2, 600);
   }
+
+  // A phone rotated into landscape, or a window dragged wider, crosses the
+  // breakpoint with no video built — pick it up rather than leaving the still.
+  var onBreakpoint = function (e) { if (!e.matches && !sv) initVideo(); };
+  if (SMALL.addEventListener) SMALL.addEventListener('change', onBreakpoint);
+  else if (SMALL.addListener) SMALL.addListener(onBreakpoint);
 
   /* ----------------------------------------------------- configurator ---- */
 
