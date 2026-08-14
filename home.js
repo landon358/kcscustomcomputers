@@ -40,11 +40,21 @@
     });
   }
 
-  // the annotation layer tracks the letterboxed video box, not the viewport
+  // the annotation layer tracks the letterboxed video box, not the viewport.
+  // The dots are positioned in percentages of that box, so the ratio has to be
+  // the footage's own — a hardcoded one silently drifts when the clips change.
+  var FALLBACK_AR = 1928 / 1076;
+  function clipAR() {
+    var host = $('clip-a');
+    var el = host && (host.querySelector('video') || host.querySelector('canvas'));
+    var w = el && (el.videoWidth || el.width), h = el && (el.videoHeight || el.height);
+    return (w && h) ? w / h : FALLBACK_AR;
+  }
+
   function fitCallouts() {
     var layer = $('callouts'), stage = $('hero-stage');
     if (!layer || !stage) return;
-    var W = stage.clientWidth, H = stage.clientHeight, AR = 1928 / 1072;
+    var W = stage.clientWidth, H = stage.clientHeight, AR = clipAR();
     var w = Math.min(W, H * AR), h = w / AR;
     layer.style.width = w + 'px';
     layer.style.height = h + 'px';
@@ -243,7 +253,7 @@
   /* ------------------------------------------------------- video init ---- */
 
   // scrolly-video's WebCodecs path decodes every frame into memory up front —
-  // 289 frames at 1928x1072 is roughly 900MB per clip. Desktop absorbs it;
+  // 289 frames at 1928x1076 is roughly 900MB per clip. Desktop absorbs it;
   // a phone does not, and the tab either loses the decode or gets killed.
   // On small screens fall back to seeking the <video> element instead.
   var SMALL = window.matchMedia('(max-width: 860px)');
@@ -299,6 +309,11 @@
 
   var selected = 'prime-m';
 
+  // The panel is narrow, so it uses the short forms of two spec labels. The
+  // catalogue keeps the long ones, which is what the shop and product pages
+  // want.
+  var CFG_LABEL = { Memory: 'RAM', Power: 'PSU' };
+
   function renderConfig() {
     var primes = window.PRODUCTS.filter(function (p) { return p.kind === 'prime'; });
     var p = primes.filter(function (x) { return x.id === selected; })[0] || primes[2];
@@ -309,10 +324,11 @@
     }).join('');
 
     $('cfg-specs').innerHTML = p.specs.slice(0, 6).map(function (s) {
-      return '<dl class="spec"><dt>' + s[0] + '</dt><dd>' + s[1] + '</dd></dl>';
+      return '<dl class="spec"><dt>' + (CFG_LABEL[s[0]] || s[0]) + '</dt><dd>' + s[1] + '</dd></dl>';
     }).join('');
 
-    $('cfg-bench').innerHTML = p.fps.map(function (f, i) {
+    // two games here; the full set is on the product page
+    $('cfg-bench').innerHTML = p.fps.slice(0, 2).map(function (f, i) {
       return '<div class="bench"><span class="bench__game">' + f[0] + '</span>' +
         '<span class="bench__bar' + (i === 1 ? ' bench__bar--2' : i === 2 ? ' bench__bar--3' : '') +
         '" style="flex:0 1 ' + Math.round(f[1] / max * 210) + 'px"></span>' +
@@ -321,7 +337,7 @@
 
     $('cfg-img').src = p.images[0];
     $('cfg-img').alt = p.name + ' build';
-    $('cfg-tag').textContent = p.name.toUpperCase() + ' — AS BUILT';
+    $('cfg-tag').textContent = p.name + ' — AS BUILT';
     $('cfg-price').textContent = window.money(p.price);
     $('cfg-sub').innerHTML = p.name + ' &middot; Win 11 Pro included';
     $('cfg-buy').href = 'product.html?id=' + p.id;
@@ -332,9 +348,9 @@
       var mem = (p.specs.filter(function (s) { return s[0] === 'Memory'; })[0] || [])[1];
       var sto = (p.specs.filter(function (s) { return s[0] === 'Storage'; })[0] || [])[1];
       var cse = (p.specs.filter(function (s) { return s[0] === 'Case'; })[0] || [])[1];
+      // no stock pill on the home row — the shop grid is where stock is read
       return '<a class="card card--deal' + (p.inStock ? '' : ' card--out') + '" href="product.html?id=' + p.id + '">' +
         '<span class="card__shot">' +
-          '<span class="pill ' + (p.inStock ? 'pill--stock' : 'pill--out') + '">' + (p.inStock ? 'In stock' : 'Out of stock') + '</span>' +
           '<img src="' + p.images[0] + '" alt="' + p.name + '">' +
         '</span>' +
         '<span class="card__body">' +
