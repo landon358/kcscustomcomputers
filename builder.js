@@ -8,16 +8,20 @@
   var sel = {};        // categoryId -> optionId
   var caseText = '';
 
-  function filled(c) { return c.freeText ? caseText.trim().length > 0 : !!sel[c.id]; }
+  // The case step offers both stocked chassis and a free-text description, so
+  // either one satisfies it. Every other step is card-only.
+  function filled(c) {
+    if (sel[c.id]) return true;
+    return !!c.freeText && caseText.trim().length > 0;
+  }
 
   function chosenName(c) {
-    if (c.freeText) return caseText.trim();
-    var o = (c.options || []).filter(function (x) { return x.id === sel[c.id]; })[0];
-    return o ? o.name : '';
+    var o = chosenOpt(c);
+    if (o) return o.name;
+    return c.freeText ? caseText.trim() : '';
   }
 
   function chosenOpt(c) {
-    if (c.freeText) return null;
     return (c.options || []).filter(function (x) { return x.id === sel[c.id]; })[0] || null;
   }
 
@@ -66,16 +70,18 @@
     $('#pick-title').textContent = c.label;
     $('#pick-blurb').textContent = c.blurb;
 
+    $('#freetext').hidden = !c.freeText;
     if (c.freeText) {
-      $('#optgrid').innerHTML = '';
-      $('#optgrid').hidden = true;
-      $('#freetext').hidden = false;
       $('#case-input').placeholder = c.placeholder || '';
       $('#case-input').value = caseText;
+    }
+
+    var opts = c.options || [];
+    $('#optgrid').hidden = !opts.length;
+    if (!opts.length) {
+      $('#optgrid').innerHTML = '';
     } else {
-      $('#freetext').hidden = true;
-      $('#optgrid').hidden = false;
-      $('#optgrid').innerHTML = c.options.map(function (o) {
+      $('#optgrid').innerHTML = opts.map(function (o) {
         return '<button type="button" class="opt' + (sel[c.id] === o.id ? ' is-on' : '') + '" data-pick="' + o.id + '">' +
           '<span class="opt__shot"><img src="' + o.img + '" alt="' + o.name + '" loading="lazy">' +
           '<span class="opt__tick">✓</span></span>' +
@@ -157,43 +163,57 @@
     });
   });
 
+  /* Where a quote goes.
+   *
+   * KC already takes enquiries through the Shopify contact form on
+   * kcscustomcomputers.com/pages/contact, and those land in his inbox. This
+   * posts the same fields to the same endpoint, so a build request arrives
+   * exactly like every other message and nothing about his process changes.
+   *
+   * It has to be a real form submission, not fetch: Shopify does not send CORS
+   * headers on /contact, so an XHR from this origin would be blocked. That
+   * means the browser lands on his contact page, which shows Shopify's own
+   * confirmation — worth it for a request that provably arrived rather than
+   * one we hope did.
+   */
+  function contactAction() {
+    var cfg = window.SHOPIFY_CONFIG || {};
+    if (cfg.contactUrl) return cfg.contactUrl;
+    if (cfg.storeUrl) return cfg.storeUrl.replace(/\/$/, '') + '/contact#ContactForm';
+    if (cfg.domain) return 'https://' + cfg.domain + '/contact#ContactForm';
+    return null;
+  }
+
+  // One readable block — Shopify emails the comment as plain text.
+  function buildComment() {
+    var lines = ['Custom build request', ''];
+    cats.forEach(function (c) {
+      lines.push(c.label + ': ' + (chosenName(c) || '—'));
+    });
+    var notes = $('#f-notes').value.trim();
+    if (notes) lines.push('', 'Notes: ' + notes);
+    return lines.join('\n');
+  }
+
+  function hiddenInput(form, name, value) {
+    var i = document.createElement('input');
+    i.type = 'hidden';
+    i.name = name;
+    i.value = value;
+    form.appendChild(i);
+  }
+
   $('#send').addEventListener('click', function () {
     if (!contactOk()) return;
 
-    var build = cats.map(function (c) {
-      return { category: c.label, choice: chosenName(c) || null };
-    });
-
-    // Flat keys so the Formspree email is readable rather than a JSON blob.
-    var payload = {
-      name: $('#f-name').value.trim(),
-      email: $('#f-email').value.trim(),
-      phone: $('#f-phone').value.trim(),
-      notes: $('#f-notes').value.trim(),
-      _subject: "Custom build request — " + $('#f-name').value.trim()
-    };
-    build.forEach(function (row) { payload[row.category] = row.choice || '—'; });
-
-    var cfg = window.SHOPIFY_CONFIG || {};
     var btn = $('#send');
+    var action = contactAction();
 
-    function done() {
-      $('#quote-form').hidden = true;
-      $('#quote-sent').hidden = false;
-    }
-
-    function fail(msg) {
-      btn.disabled = false;
-      btn.className = 'btn btn--lg btn--block btn--primary';
-      btn.textContent = 'Send build request';
-      $('#send-error').textContent = msg;
+    if (!action) {
+      // Nowhere to send it. Say so rather than showing a success panel.
+      $('#send-error').textContent =
+        'The quote form is not connected yet. Email KC directly and he will pick it up.';
       $('#send-error').hidden = false;
-    }
-
-    if (!cfg.formspreeId) {
-      // Not wired up yet — don't pretend the request went anywhere.
-      console.warn('[quote] no formspreeId in shopify-config.js; payload:', payload);
-      done();
       return;
     }
 
@@ -202,21 +222,22 @@
     btn.textContent = 'Sending…';
     $('#send-error').hidden = true;
 
-    fetch('https://formspree.io/f/' + cfg.formspreeId, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(payload)
-    })
-      .then(function (r) {
-        if (!r.ok) return r.json().then(function (j) {
-          throw new Error((j.errors && j.errors[0] && j.errors[0].message) || 'Error ' + r.status);
-        });
-        done();
-      })
-      .catch(function (err) {
-        console.error('[quote]', err);
-        fail('Could not send — ' + err.message + '. Email kc@… directly or try again.');
-      });
+    var form = document.createElement('form');
+    form.method = 'post';
+    form.action = action;
+    form.acceptCharset = 'UTF-8';
+    form.style.display = 'none';
+
+    // The field names are Shopify's, and match the contact form on his site.
+    hiddenInput(form, 'form_type', 'contact');
+    hiddenInput(form, 'utf8', '\u2713');
+    hiddenInput(form, 'contact[Name]', $('#f-name').value.trim());
+    hiddenInput(form, 'contact[email]', $('#f-email').value.trim());
+    hiddenInput(form, 'contact[Phone number]', $('#f-phone').value.trim());
+    hiddenInput(form, 'contact[Comment]', buildComment());
+
+    document.body.appendChild(form);
+    form.submit();
   });
 
   render();

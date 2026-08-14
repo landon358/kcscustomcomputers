@@ -19,9 +19,14 @@ window.SHOPIFY_CONFIG = {
   // Storefront API version. Shopify supports each for 12 months.
   apiVersion: '2026-01',
 
-  // Formspree form ID for the custom-build quote form, e.g. 'xvgpwkqz'.
-  // From your form's endpoint: https://formspree.io/f/XXXXXXXX
-  formspreeId: '',
+  // The public storefront, used for the custom-build quote form. That form
+  // posts to Shopify's own contact endpoint on this domain, so a build request
+  // arrives in the same inbox as every other message from the contact page —
+  // no third-party form service in the middle.
+  storeUrl: 'https://kcscustomcomputers.com',
+
+  // Override only if the contact form ever moves off /contact.
+  contactUrl: '',
 
   // Where the account icon points. With Shopify's new customer accounts this
   // is https://shopify.com/<store-id>/account — copy it from Admin →
