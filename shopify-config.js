@@ -52,17 +52,26 @@ window.SHOPIFY_CONFIG = {
    * 2. Give it these metafields, namespace `specs`. Each one must have
    *    "Storefront access" ticked in Admin or it reads back as null:
    *
-   *      cpu  cooler  gpu  ram  storage  psu  case  os
+   *      cpu  motherboard  cooler  gpu  ram  storage  psu  case  os
    *          — one line of text each, e.g. ram = "32GB DDR5-6000"
    *      best_for
-   *          — the tagline, e.g. "The one most people should buy."
-   *      fps  fps_1440  fps_4k
-   *          — benchmark bars, one field per resolution tab on the product
-   *            page, each written as "Fortnite:215, CS2:300, Warzone:172".
-   *            Only fps (1080p) is needed. A resolution left blank shows its
-   *            games with muted bars and "queued for 1440p testing", so the
-   *            tab is honest rather than empty — fill it in when the numbers
-   *            exist and it starts showing them.
+   *          — the tagline, the line under the product name. It is the most
+   *            visible of these, so it wants a sentence, not a category.
+   *      fps  fps_1440  fps_4k        (multi-line text)
+   *          — benchmark bars, one field per resolution tab, written the way
+   *            KC already writes them, one game per line:
+   *                Fortnite: ~240+FPS
+   *                Cyberpunk 2077 RTX: ~ 135+FPS
+   *            Only fps (1080p) is needed. Put prose in one of the others —
+   *            "Untested" — and that shows as the note for that tab instead
+   *            of the site guessing at a status.
+   *      bench_note
+   *          — how the numbers were taken, e.g. "Tested at 1080p, High".
+   *            Nothing is claimed about method unless this says so.
+   *      benchmark_scores               (multi-line text)
+   *          — 3DMark and anything else that is not a frame rate, same one
+   *            per line. Renders as its own block; these share no scale with
+   *            fps and would flatten the bars if mixed in.
    *
    * Anything left blank falls back to that product's entry in products.js,
    * matched through the handles map below. A product with neither still

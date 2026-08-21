@@ -53,11 +53,13 @@
    * machine without anyone touching this repo. Namespace `specs`, and each
    * field has to be ticked "Storefront access" in Admin or it reads as null.
    *
-   * The order here is the order the spec table renders in, and the home
-   * configurator shows the first six — so CPU..Power come before Case and OS.
+   * The order here is the order the spec table renders in. The home
+   * configurator picks its rows by label rather than taking the first N, so
+   * adding a field here cannot silently change what the home page shows.
    */
   var SPEC_FIELDS = [
-    ['cpu',     'CPU'],
+    ['cpu',         'CPU'],
+    ['motherboard', 'Motherboard'],
     ['cooler',  'Cooler'],
     ['gpu',     'GPU'],
     ['ram',     'Memory'],

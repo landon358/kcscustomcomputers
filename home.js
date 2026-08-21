@@ -348,7 +348,17 @@
       return '<button class="chip' + (x.id === selected ? ' is-active' : '') + '" data-id="' + x.id + '">' + x.name + '</button>';
     }).join('');
 
-    $('cfg-specs').innerHTML = p.specs.slice(0, 6).map(function (s) {
+    // Pick the six by name, not by position. Taking the first six meant that
+    // adding a spec field anywhere above them silently changed the home page.
+    var want = ['CPU', 'Cooler', 'GPU', 'Memory', 'Storage', 'Power'];
+    var byLabel = {};
+    p.specs.forEach(function (s) { byLabel[s[0]] = s[1]; });
+    var picked = want.filter(function (l) { return byLabel[l]; })
+                     .map(function (l) { return [l, byLabel[l]]; });
+    // an unfamiliar catalogue still fills the panel rather than emptying it
+    if (!picked.length) picked = p.specs.slice(0, 6);
+
+    $('cfg-specs').innerHTML = picked.map(function (s) {
       return '<dl class="spec"><dt>' + (CFG_LABEL[s[0]] || s[0]) + '</dt><dd>' + s[1] + '</dd></dl>';
     }).join('');
 
