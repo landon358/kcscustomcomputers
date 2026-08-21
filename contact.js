@@ -15,11 +15,19 @@
   var form = document.querySelector('form[name="contact"]');
   if (!form) return;
 
-  // Netlify strips data-netlify at deploy time, so its presence at runtime is
-  // a reliable signal that the build never processed this page.
-  var onNetlify = !form.hasAttribute('data-netlify') ||
-    /\.netlify\.(app|com)$/.test(location.hostname);
-  if (onNetlify) return;
+  /* Netlify strips data-netlify during post-processing, so the attribute
+   * still being here at runtime means the build never scanned this page and
+   * the form is not registered.
+   *
+   * This used to also stand down on any *.netlify.app hostname, which was
+   * wrong: being served by Netlify is not the same as having been processed
+   * by it. On a Netlify site whose deploy predated form detection, the
+   * hostname matched, this script stood aside, and the browser posted
+   * straight at a static file — a 404, with the fallback that exists to
+   * prevent exactly that sitting switched off. The attribute is the only
+   * signal that actually means anything.
+   */
+  if (!form.hasAttribute('data-netlify')) return;
 
   var MAILTO = 'fegelykc@gmail.com';
 
