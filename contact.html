@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shop Pre-Built — KC's Custom Computers</title>
+<title>Contact — KC's Custom Computers</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
   <button class="nav__toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false"><i></i></button>
   <div class="nav__actions" id="nav-actions">
     <a class="btn btn--ghost" href="index.html">Home</a>
-    <a class="btn btn--ghost is-active" href="shop.html">Shop Pre-Built</a>
+    <a class="btn btn--ghost" href="shop.html">Shop Pre-Built</a>
     <a class="btn btn--primary" href="build-custom.html">Build Custom</a>
     <div class="nav__divider"></div>
     <!-- cart.js wires these: cart opens the drawer, account goes to Shopify -->
@@ -27,30 +27,51 @@
 </nav>
 
 <header class="page-head">
-  <span class="eyebrow">Ready to ship</span>
-  <h1>Pre-built and proven.</h1>
-  <p>Five configurations we build over and over, because they hit the right price for the way people actually play. Assembled, stress tested and boxed &mdash; pickup in 24 hours.</p>
+  <span class="eyebrow">Contact</span>
+  <h1>Talk to the builder.</h1>
+  <p>Questions about a spec, a repair, a trade-in or an order already placed &mdash; this reaches KC directly, not a queue. Usually answered within a day.</p>
 </header>
 
-<section class="section" style="padding-top:48px">
-  <div class="grid grid--3" id="prime-grid"></div>
-</section>
-
 <section class="section section--tight">
-  <div class="section__head">
-    <span class="eyebrow">One-time deals</span>
-    <h2>One of one. When it's gone, it's gone.</h2>
-  </div>
-  <div class="grid grid--4" id="deal-grid"></div>
-</section>
 
-<section class="section">
-  <div class="custom" style="display:flex;align-items:center;gap:40px;flex-wrap:wrap;padding:44px 48px;border-radius:24px">
-    <div>
-      <h2 style="font-size:clamp(24px,2.4vw,36px);margin:0">Nothing here quite fits?</h2>
-      <p style="margin:10px 0 0;font:400 16px/1.6 var(--ui);color:var(--ink-2);max-width:520px">Every pre-built started as a custom order. Spec your own and we'll price it part by part.</p>
+  <div class="contact">
+    <div class="contact__intro">
+      <dl class="contact__meta">
+        <dt>Email</dt><dd><a href="mailto:hello@kccustom.pc">hello@kccustom.pc</a></dd>
+        <dt>Where</dt><dd>Walled Lake, Michigan &middot; local pickup in 24h</dd>
+        <dt>Hours</dt><dd>Most evenings and weekends</dd>
+      </dl>
+      <p class="contact__aside">After a full build instead? The <a href="build-custom.html">custom builder</a> walks you through the parts and sends KC the whole list.</p>
     </div>
-    <a class="btn btn--primary btn--lg" style="margin-left:auto" href="build-custom.html">Build custom</a>
+
+    <!-- Netlify Forms: the attributes below are read at deploy time by
+         Netlify's build, which strips them and wires up the backend. They do
+         nothing on any other host. -->
+    <form class="contact__form" name="contact" method="POST"
+          data-netlify="true" netlify-honeypot="bot-field" action="/thanks.html">
+      <input type="hidden" name="form-name" value="contact">
+      <p class="contact__hp"><label>Leave this empty <input name="bot-field"></label></p>
+
+      <div class="formgrid">
+        <label><span>Your name</span><input name="name" type="text" required placeholder="Your name"></label>
+        <label><span>Email</span><input name="email" type="email" required placeholder="you@email.com"></label>
+        <label><span>Phone (optional)</span><input name="phone" type="tel" placeholder="(248) 000-0000"></label>
+        <label><span>What do you need?</span>
+          <select name="topic">
+            <option>A question before buying</option>
+            <option>An order I already placed</option>
+            <option>A repair or upgrade</option>
+            <option>A trade-in</option>
+            <option>Something else</option>
+          </select>
+        </label>
+        <label class="formgrid__wide"><span>Message</span><textarea name="message" rows="6" required placeholder="Tell KC what you are after — games you play, budget, deadline, or the order number."></textarea></label>
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--lg btn--block" style="margin-top:20px">Send message</button>
+      <div class="finehint">No newsletter, no spam. Your details go to KC and nowhere else.</div>
+      <div class="finehint" id="contact-fallback" hidden>Your email app should have opened with the message ready to send. If it did not, email <a href="mailto:hello@kccustom.pc">hello@kccustom.pc</a> directly.</div>
+    </form>
   </div>
 </section>
 
@@ -94,5 +115,6 @@
 <script src="shopify.js"></script>
 <script src="cart.js"></script>
 <script src="shop.js"></script>
+<script src="contact.js"></script>
 </body>
 </html>
