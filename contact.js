@@ -21,7 +21,7 @@
     /\.netlify\.(app|com)$/.test(location.hostname);
   if (onNetlify) return;
 
-  var MAILTO = 'hello@kccustom.pc';
+  var MAILTO = 'fegelykc@gmail.com';
 
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();

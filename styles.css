@@ -779,7 +779,9 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   max-width: 340px;
   background: var(--surface);
 }
-.footer__mail span { font: 500 13.5px var(--ui); color: var(--ink-2); white-space: nowrap; }
+.footer__mail span,
+.footer__mail > a { font: 500 13.5px var(--ui); color: var(--ink-2); white-space: nowrap; }
+.footer__mail > a:hover { color: var(--blue); }
 .footer__mail .btn { margin-left: auto; height: 38px; padding: 0 20px; font-size: 13px; }
 
 .footer__links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; }
