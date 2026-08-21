@@ -12,7 +12,6 @@ window.PRODUCTS_STATIC = [
     id: 'prime-s', name: 'Prime S', kind: 'prime', price: 1300, inStock: true,
     images: ['images/prime-s.jpg', 'images/hero-01-white-openframe.jpg'],
     tagline: 'The entry point that still plays everything at 1080p high.',
-    blurb: "Six cores, a 5060 and a 360mm AIO in an airflow case. It is the build we recommend to anyone who plays competitive shooters and does not want to think about thermals again.",
     specs: [['CPU', 'Ryzen 5 7600X · 6C/12T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5060 8GB'], ['Memory', '16GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '700W 80+ Bronze'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
     fps: [['Fortnite', 165], ['CS2', 240], ['Warzone', 130]]
   },
@@ -20,7 +19,6 @@ window.PRODUCTS_STATIC = [
     id: 'prime-s-pro', name: 'Prime S Pro', kind: 'prime', price: 1400, inStock: true,
     images: ['images/prime-s-pro.jpg', 'images/hero-02-white-matx.jpg'],
     tagline: 'Same chassis, a meaningfully faster card.',
-    blurb: "A hundred dollars buys the 5060 Ti and roughly twenty percent more frames. If you are choosing between this and the Prime S, this is the one that ages better.",
     specs: [['CPU', 'Ryzen 5 7600X · 6C/12T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5060 Ti 8GB'], ['Memory', '16GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '700W 80+ Bronze'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
     fps: [['Fortnite', 185], ['CS2', 265], ['Warzone', 148]]
   },
@@ -28,7 +26,6 @@ window.PRODUCTS_STATIC = [
     id: 'prime-m', name: 'Prime M', kind: 'prime', price: 1900, inStock: true, popular: true,
     images: ['images/prime-m-01.jpg', 'images/prime-m-02.jpg'],
     tagline: 'The one most people should buy.',
-    blurb: "Eight cores, a 5070 and 32GB of DDR5. High refresh at 1440p in everything current, with enough power headroom to drop in a bigger card in two years.",
     specs: [['CPU', 'Ryzen 7 7700X · 8C/16T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5070 12GB'], ['Memory', '32GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
     fps: [['Fortnite', 215], ['CS2', 300], ['Warzone', 172]]
   },
@@ -37,7 +34,6 @@ window.PRODUCTS_STATIC = [
     stockNote: 'Next batch mid-August',
     images: ['images/prime-m-02.jpg', 'images/prime-m-01.jpg'],
     tagline: 'The X3D chip, without the X-class card.',
-    blurb: "If your games are CPU bound — sims, strategy, competitive shooters at low settings — the 7800X3D does more for your frame rate than a bigger GPU would.",
     specs: [['CPU', 'Ryzen 7 7800X3D · 8C/16T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5070 12GB'], ['Memory', '32GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
     fps: [['Fortnite', 240], ['CS2', 335], ['Warzone', 188]]
   },
@@ -45,7 +41,6 @@ window.PRODUCTS_STATIC = [
     id: 'prime-x', name: 'Prime X', kind: 'prime', price: 2550, inStock: true,
     images: ['images/prime-x.jpg', 'images/prime-x-02.jpg'],
     tagline: 'Top of the range, built to stay there.',
-    blurb: "7800X3D and a 5070 Ti. This is the build for 1440p ultra at high refresh, or 4K if you are willing to use upscaling. Nothing in it is a compromise.",
     specs: [['CPU', 'Ryzen 7 7800X3D · 8C/16T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5070 Ti 16GB'], ['Memory', '32GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
     fps: [['Fortnite', 265], ['CS2', 370], ['Warzone', 205]]
   },
@@ -53,7 +48,6 @@ window.PRODUCTS_STATIC = [
     id: 'deal-850', name: 'Ryzen 5 5600X · RTX 4060', kind: 'deal', price: 850, inStock: true,
     images: ['images/deal-850-5600x-4060.jpg'],
     tagline: 'One of one. When it is gone, it is gone.',
-    blurb: "A clean AM4 build in a Lian Li V100R. Perfect first gaming PC, or a solid second machine for the living room.",
     specs: [['CPU', 'Ryzen 5 5600X · 6C/12T'], ['Cooler', 'Air tower'], ['GPU', 'RTX 4060 8GB'], ['Memory', '16GB DDR4-3600'], ['Storage', '512GB NVMe SSD'], ['Power', '650W 80+ Bronze'], ['Case', 'Lian Li V100R'], ['OS', 'Windows 11 Pro']],
     fps: [['Fortnite', 145], ['CS2', 210], ['Warzone', 118]]
   },
@@ -61,7 +55,6 @@ window.PRODUCTS_STATIC = [
     id: 'deal-1150', name: 'Ryzen 5 7500X3D · RTX 4060', kind: 'deal', price: 1150, inStock: true,
     images: ['images/deal-1150-7500x3d-4060.jpg'],
     tagline: 'One of one. When it is gone, it is gone.',
-    blurb: "X3D cache on a budget card. Punches far above its price in anything CPU limited.",
     specs: [['CPU', 'Ryzen 5 7500X3D · 6C/12T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 4060 8GB'], ['Memory', '32GB DDR4-3600'], ['Storage', '1TB NVMe SSD'], ['Power', '750W 80+ Gold'], ['Case', 'Airflow mid tower'], ['OS', 'Windows 11 Pro']],
     fps: [['Fortnite', 168], ['CS2', 255], ['Warzone', 132]]
   },
@@ -70,7 +63,6 @@ window.PRODUCTS_STATIC = [
     stockNote: 'Sold — one of one',
     images: ['images/deal-1350-7500x3d-3080.jpg'],
     tagline: 'One of one. When it is gone, it is gone.',
-    blurb: "A 3080 still beats plenty of current mid-range cards. Paired with X3D cache it is a serious 1440p machine.",
     specs: [['CPU', 'Ryzen 5 7500X3D · 6C/12T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 3080 10GB'], ['Memory', '16GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Lian Li V100'], ['OS', 'Windows 11 Pro']],
     fps: [['Fortnite', 195], ['CS2', 280], ['Warzone', 160]]
   },
@@ -78,7 +70,6 @@ window.PRODUCTS_STATIC = [
     id: 'deal-2100', name: 'Ryzen 7 7800X3D · RTX 5070', kind: 'deal', price: 2100, inStock: true,
     images: ['images/deal-2100-7800x3d-5070.jpg'],
     tagline: 'One of one. When it is gone, it is gone.',
-    blurb: "Full RGB DDR5 in a Lian Li V100. The best-looking machine currently on the bench, and no slouch either.",
     specs: [['CPU', 'Ryzen 7 7800X3D · 8C/16T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5070 12GB'], ['Memory', '32GB DDR5-6000 RGB'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Lian Li V100'], ['OS', 'Windows 11 Pro']],
     fps: [['Fortnite', 240], ['CS2', 330], ['Warzone', 190]]
   }

@@ -6,7 +6,7 @@
  *
  * Design note: Shopify is authoritative for commerce (price, availability,
  * variant IDs, images). products.js stays authoritative for presentation
- * (specs, benchmarks, blurbs) and is merged in by handle. That means the site
+ * (specs, benchmarks, copy) and is merged in by handle. That means the site
  * works the moment a token is added, without you having to move every spec
  * into a metafield first. Migrate to metafields later if you want.
  */
@@ -72,7 +72,7 @@
   // one per resolution tab on the product page.
   var FPS_FIELDS = [['fps', 'fps'], ['fps_1440', 'fps1440'], ['fps_4k', 'fps4k']];
   var META_KEYS = SPEC_FIELDS.map(function (f) { return f[0]; })
-    .concat(['best_for', 'bench_note', 'benchmark_scores'])
+    .concat(['best_for', 'blurb', 'bench_note', 'benchmark_scores'])
     .concat(FPS_FIELDS.map(function (f) { return f[0]; }));
 
   /* Shopify's Add-definition screen defaults the namespace to `custom`, and
@@ -252,7 +252,19 @@
        * and half from the repo would be a nightmare to debug.
        */
       tagline: meta.best_for || local.tagline || '',
-      blurb: local.blurb || node.description || '',
+      /* No blurb for now.
+       *
+       * What was here was demo copy of mine making claims nobody had checked
+       * ("high refresh at 1440p in everything current"), on a store taking
+       * real orders. And node.description is not a substitute: KC's
+       * descriptions are spec dumps — "CPU: ... Motherboard: ... Memory: ..."
+       * — which as a paragraph under the spec table would just repeat it in
+       * worse form.
+       *
+       * The plumbing stays so a `blurb` metafield fills it the moment there
+       * is real prose to show. Until then the section hides itself.
+       */
+      blurb: meta.blurb || local.blurb || '',
       specs: metaSpecs.length ? metaSpecs : (local.specs || []),
       fps: fps.fps,
       fps1440: fps.fps1440,

@@ -185,7 +185,10 @@
     $('p-name').textContent = p.name;
     $('p-tagline').textContent = p.tagline;
     $('p-price').textContent = window.money(p.price);
-    $('p-blurb').textContent = p.blurb;
+    // an empty paragraph still takes its margin, so hide it outright
+    var blurb = $('p-blurb');
+    blurb.textContent = p.blurb || '';
+    blurb.hidden = !p.blurb;
 
     var stock = $('p-stock');
     stock.textContent = p.inStock ? 'In stock' : 'Out of stock';
