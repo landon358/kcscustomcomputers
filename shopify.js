@@ -213,10 +213,14 @@
       .map(function (f) { return [f[1], meta[f[0]]]; });
     // Each resolution falls back on its own, so KC can add 1440p numbers
     // without having to restate the 1080p ones.
-    var fps = {};
+    var fps = {}, fpsNotes = {};
     FPS_FIELDS.forEach(function (f) {
       var parsed = parseFps(meta[f[0]]);
       fps[f[1]] = parsed.length ? parsed : rows(local[f[1]]);
+      // A field holding something that is not rows — "Untested", "Coming
+      // soon" — is KC saying where he has got to. Keep his words rather than
+      // discarding them and asserting our own status in their place.
+      if (!parsed.length && meta[f[0]]) fpsNotes[f[1]] = meta[f[0]];
     });
 
     return {
@@ -254,6 +258,8 @@
       // 3DMark and friends: a second block of scores that are not frame rates
       // and share no scale with them, so they render on their own.
       scores: parseFps(meta.benchmark_scores),
+      // per-resolution status lines, where he wrote one instead of numbers
+      fpsNotes: fpsNotes,
       // How the numbers were taken. His words, not ours — the site used to
       // assert a methodology nobody had verified.
       benchNote: meta.bench_note || ''

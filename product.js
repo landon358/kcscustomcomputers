@@ -67,10 +67,13 @@
     var label = (RES.filter(function (r) { return r[1] === res; })[0] || [])[2];
     // KC's own note if he wrote one; otherwise say only what we actually know
     var measured = prod.benchNote || 'Measured on the bench.';
+    // KC's own status for this resolution beats ours; he wrote "Untested",
+    // not "queued for testing", and only he knows which is true.
+    var his = (prod.fpsNotes || {})[res];
     $('p-bench-note').textContent = list.length === 0
       ? 'No benchmarks recorded for this build yet.'
       : (noData
-          ? 'Numbers pending — this machine is queued for ' + label + ' testing.'
+          ? (his || 'Not yet tested at ' + label + '.')
           : measured);
 
     // 3DMark and similar: different scale entirely, so its own block or nothing
