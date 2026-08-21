@@ -70,11 +70,19 @@
   // one per resolution tab on the product page.
   var FPS_FIELDS = [['fps', 'fps'], ['fps_1440', 'fps1440'], ['fps_4k', 'fps4k']];
   var META_KEYS = SPEC_FIELDS.map(function (f) { return f[0]; })
-    .concat(['best_for'])
+    .concat(['best_for', 'bench_note', 'benchmark_scores'])
     .concat(FPS_FIELDS.map(function (f) { return f[0]; }));
 
-  var META_IDS = META_KEYS.map(function (k) {
-    return '{namespace: "specs", key: "' + k + '"}';
+  /* Shopify's Add-definition screen defaults the namespace to `custom`, and
+   * changing it is an easy step to miss on one field out of twelve — which
+   * would fail silently, since a missing metafield and a wrong namespace look
+   * identical from here. So both are read and whichever carries a value wins.
+   */
+  var META_NAMESPACES = ['specs', 'custom'];
+  var META_IDS = META_NAMESPACES.map(function (ns) {
+    return META_KEYS.map(function (k) {
+      return '{namespace: "' + ns + '", key: "' + k + '"}';
+    }).join(' ');
   }).join(' ');
 
   var PRODUCT_FIELDS = [
@@ -82,41 +90,91 @@
     'description',
     'priceRange { minVariantPrice { amount currencyCode } }',
     'images(first: 8) { edges { node { url altText } } }',
-    'metafields(identifiers: [' + META_IDS + ']) { key value }',
+    'metafields(identifiers: [' + META_IDS + ']) { namespace key value }',
     'variants(first: 1) { edges { node { id availableForSale quantityAvailable price { amount currencyCode } } } }'
   ].join(' ');
 
-  // Shopify returns one slot per identifier, null for the ones not set.
+  // Shopify returns one slot per identifier, null for the ones not set. Keys
+  // are collapsed across namespaces; `specs` wins if a key somehow exists in
+  // both, since that is the one this site documents.
   function metaMap(nodes) {
     var out = {};
     (nodes || []).forEach(function (m) {
-      if (m && m.key && String(m.value).trim()) out[m.key] = String(m.value).trim();
+      if (!m || !m.key || !String(m.value).trim()) return;
+      if (out[m.key] && m.namespace !== 'specs') return;
+      out[m.key] = String(m.value).trim();
     });
     return out;
   }
 
-  /* Benchmarks have no natural Shopify field, so `fps` is free text:
-   *   Fortnite:215, CS2:300, Warzone:172
-   * A JSON array of [game, fps] pairs is accepted too. Anything unparseable
-   * yields nothing rather than a broken row.
+  /* Benchmarks, in the shape KC already writes them.
+   *
+   * His own listings read like this, one per line:
+   *
+   *     Fortnite: ~240+FPS
+   *     Cyberpunk 2077 RTX: ~ 135+FPS
+   *     Timespy: ~ 19,400
+   *
+   * So the parser takes what he types rather than asking him to restate it.
+   * Three things follow from that:
+   *
+   *   - Rows split on newlines first. A comma cannot be the delimiter when a
+   *     value can be "19,400".
+   *   - The label is everything before the LAST colon, so "Cyberpunk 2077 RTX"
+   *     survives having one of its own.
+   *   - The text is kept exactly as written and shown that way. The "~" and
+   *     the "+" are doing real work — he is saying "about this, or better" —
+   *     and rendering a bare "240 fps" would claim a precision he does not.
+   *     The number is parsed only to size the bar.
    */
+  // products.js still stores pairs; bring them into the parser's shape so the
+  // renderers only ever see one kind of row.
+  function rows(list) {
+    return (list || []).map(function (r) {
+      if (r && typeof r === 'object' && !r.length) return r;
+      var n = Number(r[1]);
+      return { label: String(r[0]), value: isFinite(n) ? n : null,
+               text: isFinite(n) ? n + ' fps' : String(r[1]) };
+    });
+  }
+
   function parseFps(raw) {
     if (!raw) return [];
+    raw = String(raw).trim();
+
     if (raw.charAt(0) === '[') {
       try {
         var j = JSON.parse(raw);
         if (Object.prototype.toString.call(j) === '[object Array]') {
           return j.filter(function (r) { return r && r.length >= 2; })
-                  .map(function (r) { return [String(r[0]), Number(r[1]) || 0]; });
+                  .map(function (r) {
+                    var n = Number(r[1]);
+                    return { label: String(r[0]), value: isFinite(n) ? n : null,
+                             text: isFinite(n) ? n + ' fps' : String(r[1]) };
+                  });
         }
       } catch (e) { /* fall through to the plain form */ }
     }
-    return raw.split(',').map(function (pair) {
-      var i = pair.lastIndexOf(':');
+
+    // newline, then semicolon, and only then comma — so a thousands separator
+    // inside a value is never mistaken for a row break
+    var rows;
+    if (/[\r\n]/.test(raw)) rows = raw.split(/[\r\n]+/);
+    else if (raw.indexOf(';') !== -1) rows = raw.split(';');
+    else rows = raw.split(',');
+
+    return rows.map(function (row) {
+      row = row.replace(/^[\s•*◦-]+/, '').trim();     // strip bullets
+      if (!row) return null;
+      var i = row.lastIndexOf(':');
       if (i < 1) return null;
-      var game = pair.slice(0, i).trim();
-      var n = parseFloat(pair.slice(i + 1));
-      return (game && isFinite(n)) ? [game, n] : null;
+      var label = row.slice(0, i).trim();
+      var text = row.slice(i + 1).trim();
+      if (!label || !text) return null;
+      var m = text.replace(/(\d),(?=\d{3}\b)/g, '$1').match(/\d+(?:\.\d+)?/);
+      // a bare number carries no unit; anything KC wrote himself is left alone
+      if (/^\d+(?:\.\d+)?$/.test(text)) text += ' fps';
+      return { label: label, text: text, value: m ? parseFloat(m[0]) : null };
     }).filter(Boolean);
   }
 
@@ -158,7 +216,7 @@
     var fps = {};
     FPS_FIELDS.forEach(function (f) {
       var parsed = parseFps(meta[f[0]]);
-      fps[f[1]] = parsed.length ? parsed : (local[f[1]] || []);
+      fps[f[1]] = parsed.length ? parsed : rows(local[f[1]]);
     });
 
     return {
@@ -192,8 +250,29 @@
       specs: metaSpecs.length ? metaSpecs : (local.specs || []),
       fps: fps.fps,
       fps1440: fps.fps1440,
-      fps4k: fps.fps4k
+      fps4k: fps.fps4k,
+      // 3DMark and friends: a second block of scores that are not frame rates
+      // and share no scale with them, so they render on their own.
+      scores: parseFps(meta.benchmark_scores),
+      // How the numbers were taken. His words, not ours — the site used to
+      // assert a methodology nobody had verified.
+      benchNote: meta.bench_note || ''
     };
+  }
+
+  // The static catalogue stores fps as pairs; the renderers expect parser rows,
+  // so give the fallback path the same shape the Shopify path produces.
+  function staticCatalogue() {
+    return (window.PRODUCTS_STATIC || []).map(function (p) {
+      var out = {};
+      for (var k in p) if (Object.prototype.hasOwnProperty.call(p, k)) out[k] = p[k];
+      out.fps = rows(p.fps);
+      out.fps1440 = rows(p.fps1440);
+      out.fps4k = rows(p.fps4k);
+      out.scores = rows(p.scores);
+      out.benchNote = p.benchNote || '';
+      return out;
+    });
   }
 
   // Both grids read as a price ladder — the shop copy sells "from $1,300" and
@@ -215,7 +294,7 @@
   // Resolves to a product array either way: Shopify when configured and
   // reachable, the static catalogue otherwise. Never rejects.
   function loadProducts() {
-    if (!configured) return Promise.resolve(window.PRODUCTS_STATIC.slice());
+    if (!configured) return Promise.resolve(ladder(staticCatalogue()));
 
     var C = CFG.collections || {};
     var byCollection = (C.prime || C.deal)
@@ -241,7 +320,7 @@
       })
       .catch(function (err) {
         console.warn('[shopify] falling back to static catalogue:', err.message);
-        return window.PRODUCTS_STATIC.slice();
+        return ladder(staticCatalogue());
       });
   }
 

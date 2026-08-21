@@ -343,7 +343,6 @@
   function renderConfig() {
     var primes = window.PRODUCTS.filter(function (p) { return p.kind === 'prime'; });
     var p = primes.filter(function (x) { return x.id === selected; })[0] || primes[2];
-    var max = 370;
 
     $('cfg-chips').innerHTML = primes.map(function (x) {
       return '<button class="chip' + (x.id === selected ? ' is-active' : '') + '" data-id="' + x.id + '">' + x.name + '</button>';
@@ -353,12 +352,16 @@
       return '<dl class="spec"><dt>' + (CFG_LABEL[s[0]] || s[0]) + '</dt><dd>' + s[1] + '</dd></dl>';
     }).join('');
 
-    // two games here; the full set is on the product page
-    $('cfg-bench').innerHTML = p.fps.slice(0, 2).map(function (f, i) {
-      return '<div class="bench"><span class="bench__game">' + f[0] + '</span>' +
-        '<span class="bench__bar' + (i === 1 ? ' bench__bar--2' : i === 2 ? ' bench__bar--3' : '') +
-        '" style="flex:0 1 ' + Math.round(f[1] / max * 210) + 'px"></span>' +
-        '<span class="bench__fps">' + f[1] + ' fps</span></div>';
+    // two games here; the full set is on the product page. Rows carry KC's own
+    // wording ("~240+FPS"), so the label is printed rather than rebuilt.
+    var top = p.fps.slice(0, 2);
+    var top_max = top.reduce(function (a, r) { return Math.max(a, r.value || 0); }, 1);
+    $('cfg-bench').innerHTML = top.map(function (f, i) {
+      var w = typeof f.value === 'number' ? Math.round(f.value / top_max * 210) : 210;
+      return '<div class="bench"><span class="bench__game">' + f.label + '</span>' +
+        '<span class="bench__bar' + (i === 1 ? ' bench__bar--2' : '') +
+        '" style="flex:0 1 ' + w + 'px"></span>' +
+        '<span class="bench__fps">' + f.text + '</span></div>';
     }).join('');
 
     $('cfg-img').src = p.images[0];

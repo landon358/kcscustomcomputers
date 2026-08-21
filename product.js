@@ -53,29 +53,55 @@
         '" data-res="' + r[1] + '" aria-selected="' + (r[1] === res) + '">' + r[0] + '</button>';
     }).join('');
 
-    var rows = prod[res] || [];
-    var noData = !rows.length;
+    var list = prod[res] || [];
+    var noData = !list.length;
     // fall back to the 1080p line-up so the rows stay put across the switch
     if (noData) {
-      rows = (prod.fps || []).map(function (f) { return [f[0], null]; });
+      list = (prod.fps || []).map(function (r) {
+        return { label: r.label, text: '', value: null };
+      });
     }
 
-    var max = rows.reduce(function (a, f) { return Math.max(a, f[1] || 0); }, 1);
-    $('p-bench').innerHTML = rows.map(function (f, i) {
-      var has = typeof f[1] === 'number';
-      return '<div class="bench' + (has ? '' : ' is-pending') + '">' +
-        '<span class="bench__game">' + f[0] + '</span>' +
-        '<span class="bench__bar' + (i === 1 ? ' bench__bar--2' : i === 2 ? ' bench__bar--3' : '') +
-        '" style="flex:0 1 ' + (has ? Math.round(f[1] / max * 210) : 210) + 'px"></span>' +
-        '<span class="bench__fps">' + (has ? f[1] + ' fps' : 'Not measured yet') + '</span></div>';
-    }).join('');
+    $('p-bench').innerHTML = bars(list, 'Not measured yet');
 
     var label = (RES.filter(function (r) { return r[1] === res; })[0] || [])[2];
-    $('p-bench-note').textContent = rows.length === 0
+    // KC's own note if he wrote one; otherwise say only what we actually know
+    var measured = prod.benchNote || 'Measured on the bench.';
+    $('p-bench-note').textContent = list.length === 0
       ? 'No benchmarks recorded for this build yet.'
       : (noData
           ? 'Numbers pending — this machine is queued for ' + label + ' testing.'
-          : 'Averages over a 10-minute run, high preset, no upscaling.');
+          : measured);
+
+    // 3DMark and similar: different scale entirely, so its own block or nothing
+    var box = $('p-scores');
+    if (box) {
+      var sc = prod.scores || [];
+      box.hidden = !sc.length;
+      if (sc.length) {
+        $('p-scores-list').innerHTML = sc.map(function (r) {
+          return '<dl class="spec"><dt>' + esc(r.label) + '</dt><dd>' + esc(r.text) + '</dd></dl>';
+        }).join('');
+      }
+    }
+  }
+
+  function esc(t) {
+    return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* Bars are sized by the parsed number but labelled with what KC wrote, so
+     "~240+FPS" reads as he meant it rather than as a bare 240. */
+  function bars(list, emptyText) {
+    var max = list.reduce(function (a, r) { return Math.max(a, r.value || 0); }, 1);
+    return list.map(function (r, i) {
+      var has = typeof r.value === 'number' && isFinite(r.value);
+      return '<div class="bench' + (has ? '' : ' is-pending') + '">' +
+        '<span class="bench__game">' + esc(r.label) + '</span>' +
+        '<span class="bench__bar' + (i % 3 === 1 ? ' bench__bar--2' : i % 3 === 2 ? ' bench__bar--3' : '') +
+        '" style="flex:0 1 ' + (has ? Math.round(r.value / max * 210) : 210) + 'px"></span>' +
+        '<span class="bench__fps">' + esc(r.text || emptyText) + '</span></div>';
+    }).join('');
   }
 
   // the tabs are rebuilt on every render, so listen on the container
