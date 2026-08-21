@@ -43,35 +43,6 @@ window.PRODUCTS_STATIC = [
     tagline: 'Top of the range, built to stay there.',
     specs: [['CPU', 'Ryzen 7 7800X3D · 8C/16T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5070 Ti 16GB'], ['Memory', '32GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
     fps: [['Fortnite', 265], ['CS2', 370], ['Warzone', 205]]
-  },
-  {
-    id: 'deal-850', name: 'Ryzen 5 5600X · RTX 4060', kind: 'deal', price: 850, inStock: true,
-    images: ['images/deal-850-5600x-4060.jpg'],
-    tagline: 'One of one. When it is gone, it is gone.',
-    specs: [['CPU', 'Ryzen 5 5600X · 6C/12T'], ['Cooler', 'Air tower'], ['GPU', 'RTX 4060 8GB'], ['Memory', '16GB DDR4-3600'], ['Storage', '512GB NVMe SSD'], ['Power', '650W 80+ Bronze'], ['Case', 'Lian Li V100R'], ['OS', 'Windows 11 Pro']],
-    fps: [['Fortnite', 145], ['CS2', 210], ['Warzone', 118]]
-  },
-  {
-    id: 'deal-1150', name: 'Ryzen 5 7500X3D · RTX 4060', kind: 'deal', price: 1150, inStock: true,
-    images: ['images/deal-1150-7500x3d-4060.jpg'],
-    tagline: 'One of one. When it is gone, it is gone.',
-    specs: [['CPU', 'Ryzen 5 7500X3D · 6C/12T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 4060 8GB'], ['Memory', '32GB DDR4-3600'], ['Storage', '1TB NVMe SSD'], ['Power', '750W 80+ Gold'], ['Case', 'Airflow mid tower'], ['OS', 'Windows 11 Pro']],
-    fps: [['Fortnite', 168], ['CS2', 255], ['Warzone', 132]]
-  },
-  {
-    id: 'deal-1350', name: 'Ryzen 5 7500X3D · RTX 3080', kind: 'deal', price: 1350, inStock: false,
-    stockNote: 'Sold — one of one',
-    images: ['images/deal-1350-7500x3d-3080.jpg'],
-    tagline: 'One of one. When it is gone, it is gone.',
-    specs: [['CPU', 'Ryzen 5 7500X3D · 6C/12T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 3080 10GB'], ['Memory', '16GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Lian Li V100'], ['OS', 'Windows 11 Pro']],
-    fps: [['Fortnite', 195], ['CS2', 280], ['Warzone', 160]]
-  },
-  {
-    id: 'deal-2100', name: 'Ryzen 7 7800X3D · RTX 5070', kind: 'deal', price: 2100, inStock: true,
-    images: ['images/deal-2100-7800x3d-5070.jpg'],
-    tagline: 'One of one. When it is gone, it is gone.',
-    specs: [['CPU', 'Ryzen 7 7800X3D · 8C/16T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5070 12GB'], ['Memory', '32GB DDR5-6000 RGB'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Lian Li V100'], ['OS', 'Windows 11 Pro']],
-    fps: [['Fortnite', 240], ['CS2', 330], ['Warzone', 190]]
   }
 ];
 

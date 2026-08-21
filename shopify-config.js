@@ -83,18 +83,20 @@ window.SHOPIFY_CONFIG = {
    * Shopify stays authoritative for price, stock and variant IDs; products.js
    * keeps the specs, benchmarks and copy, merged in by the id on the right.
    *
+   * Only the five Prime machines are mapped. The one-time deals deliberately
+   * are not: KC relists those under whatever handle is free, so a slug that
+   * meant one machine last month means another today, and pinning a catalogue
+   * entry to it produced cards naming a machine that was not the one for sale.
+   * Deals are described entirely by their Shopify metafields.
+   *
    * Handles come from Admin → Products → the product's URL slug. If you
-   * relist a machine under a new handle, update it here.
+   * relist a Prime under a new handle, update it here.
    */
   handles: {
     'beginner-build':                          'prime-s',      // Prime S      $1300
     'beginner':                                'prime-s-pro',  // Prime S Pro  $1400
     'beginner-build-copy':                     'prime-m',      // Prime M      $1900
     'intermediate':                            'prime-m-pro',  // Prime M Pro  $2000
-    'intermediate-build-copy':                 'prime-x',      // Prime X      $2550
-    'ryzen-7-5800x3d-2070-super-gaming-pc':    'deal-850',     // 5600X/4060    $850
-    'intel-i7-12700k-rtx-2070-super':          'deal-1150',    // 7500X3D/4060 $1150
-    'ryzen-9-9900x-rtx-5070-ti-custom-build':  'deal-1350',    // 7500X3D/3080 $1350
-    'ryzen-7-7800x3d-rtx-5070':                'deal-2100'     // 7800X3D/5070 $2100
+    'intermediate-build-copy':                 'prime-x'       // Prime X      $2550
   }
 };

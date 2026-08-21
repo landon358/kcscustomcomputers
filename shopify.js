@@ -228,9 +228,17 @@
     return {
       id: id,
       handle: node.handle,
-      // Titles in Admin are plain ("Ryzen 5 5600X RTX 4060"); the catalogue
-      // carries the typeset ones the design expects.
-      name: local.name || node.title,
+      /* Shopify wins, for everything it knows.
+       *
+       * The catalogue used to supply the name because Admin titles were plain
+       * where the design wanted typeset ones. Then KC relisted three deals
+       * under their old handles — same slug, different machine — and the site
+       * cheerfully paired a card headed "Ryzen 7 7800X3D · RTX 5070" with an
+       * Intel i5-12400 spec sheet and a photograph of neither. A handle is not
+       * a stable identity for a one-off, so nothing presentational may
+       * override what the store actually says.
+       */
+      name: node.title || local.name,
       // Collection membership first, then a tag, then the catalogue. The live
       // products carry no tags, so without the collections everything would
       // read as a prime and the deals row would come up empty.
@@ -241,9 +249,9 @@
       inStock: node.availableForSale,
       stockNote: local.stockNote,
       variantId: variant ? variant.id : null,
-      // The catalogue art is what the design was built against; Shopify's own
-      // photography is the fallback for anything not in products.js.
-      images: (local.images && local.images.length) ? local.images : images,
+      // Same reasoning: KC's own photographs of the machine he is actually
+      // selling, and the catalogue art only if the store has none.
+      images: images.length ? images : (local.images || []),
       /* Presentation: Shopify metafields first, products.js second.
        *
        * Each block falls back on its own — a product can carry its specs in
