@@ -78,6 +78,7 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   gap: 28px;
   padding: 16px var(--pad-x);
   background: transparent;
+  transition: background .22s ease, border-color .22s ease;
 }
 
 .nav--solid {
@@ -278,6 +279,18 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   font: 400 10.5px var(--ui);
   color: var(--ink-4);
   margin-top: 10px;
+}
+
+/* Sits under both clip layers, matched to the frame the hero opens on, so a
+   stage that never gets a video is still the photograph rather than nothing.
+   contain and the same box as the clips, so the handover is invisible. */
+.hero__poster {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* The mobile stand-in for the scrubbed clips. Hidden on desktop, where the
@@ -779,9 +792,11 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   max-width: 340px;
   background: var(--surface);
 }
+/* :not(.btn) matters — this selector outranks .btn--primary, and without it
+   the "Get in touch" button's white label was repainted muted grey on blue. */
 .footer__mail span,
-.footer__mail > a { font: 500 13.5px var(--ui); color: var(--ink-2); white-space: nowrap; }
-.footer__mail > a:hover { color: var(--blue); }
+.footer__mail > a:not(.btn) { font: 500 13.5px var(--ui); color: var(--ink-2); white-space: nowrap; }
+.footer__mail > a:not(.btn):hover { color: var(--blue); }
 .footer__mail .btn { margin-left: auto; height: 38px; padding: 0 20px; font-size: 13px; }
 
 .footer__links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; }
@@ -869,6 +884,8 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   }
   .callouts { display: none; }
   .hero__clip { display: none; }
+  /* the phone has its own still; this one would only be a second download */
+  .hero__poster { display: none; }
 
   .hero__title {
     position: static;
@@ -988,4 +1005,19 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
 @media (max-width: 860px) {
   .contact { grid-template-columns: 1fr; gap: 30px; }
   .contact__form { padding: 22px 20px 24px; }
+}
+.contact__meta a { color: var(--blue); }
+.contact__note {
+  display: block;
+  margin-top: 4px;
+  font: 400 12.5px var(--ui);
+  color: var(--ink-3);
+}
+
+/* Designer credit — last line in the footer, left, deliberately quiet. */
+.footer__credit {
+  padding: 0 0 22px;
+  font: 400 11px var(--ui);
+  letter-spacing: 0.01em;
+  color: var(--ink-4);
 }
