@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# The order confirmation has nothing to index and should never be a result.
+Disallow: /thanks
+
+Sitemap: https://kcscustomcomputers.netlify.app/sitemap.xml

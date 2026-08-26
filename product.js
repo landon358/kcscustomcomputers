@@ -176,6 +176,86 @@
       });
   });
 
+  /* ------------------------------------------------------------ seo ---- */
+
+  /* product.html is one template rendering whichever machine ?id= names, so
+     its title, description, canonical and Product schema have to be written
+     per machine at runtime. Google renders JavaScript before indexing, so
+     this is seen — but the static head still carries a sensible default in
+     case a crawler that does not run JS gets here first. */
+  var SEO_BASE = 'https://kcscustomcomputers.netlify.app';
+
+  function setMeta(sel, attr, val) {
+    var el = document.head.querySelector(sel);
+    if (el) el.setAttribute(attr, val);
+  }
+
+  function paintSeo(p) {
+    var url = SEO_BASE + '/product?id=' + encodeURIComponent(p.id);
+    // Build from the headline parts, then drop whole specs until the closing
+    // sentence fits. A hard slice cut mid-word ("...tested in Walled"), which
+    // is what actually shows in a search result.
+    var TAIL = '. Built and bench tested in Walled Lake, Michigan.';
+    var picked = p.specs.slice(0, 4);
+    var desc;
+    do {
+      var specs = picked.map(function (s) { return s[0] + ' ' + s[1]; }).join(', ');
+      desc = p.name + ' — ' + (specs || 'hand-built gaming PC') + TAIL;
+      picked = picked.slice(0, -1);
+    } while (desc.length > 158 && picked.length);
+    var title = p.name + ' | ' + window.money(p.price) + " | KC's Custom Computers";
+
+    document.title = title;
+    setMeta('meta[name="description"]', 'content', desc);
+    setMeta('link[rel="canonical"]', 'href', url);
+    setMeta('meta[property="og:title"]', 'content', title);
+    setMeta('meta[property="og:description"]', 'content', desc);
+    setMeta('meta[property="og:url"]', 'content', url);
+    setMeta('meta[name="twitter:title"]', 'content', title);
+    setMeta('meta[name="twitter:description"]', 'content', desc);
+    if (p.images[0]) {
+      var img = p.images[0].indexOf('http') === 0 ? p.images[0] : SEO_BASE + '/' + p.images[0];
+      setMeta('meta[property="og:image"]', 'content', img);
+      setMeta('meta[name="twitter:image"]', 'content', img);
+    }
+
+    var ld = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: p.name,
+      description: desc,
+      image: p.images.map(function (i) {
+        return i.indexOf('http') === 0 ? i : SEO_BASE + '/' + i;
+      }),
+      brand: { '@type': 'Brand', name: "KC's Custom Computers" },
+      offers: {
+        '@type': 'Offer',
+        url: url,
+        price: String(p.price),
+        priceCurrency: p.currency || 'USD',
+        // stock is read live from Shopify, so this is never a stale claim
+        availability: p.inStock
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+        seller: { '@type': 'Organization', name: "KC's Custom Computers" }
+      }
+    };
+    if (p.specs.length) {
+      ld.additionalProperty = p.specs.map(function (s) {
+        return { '@type': 'PropertyValue', name: s[0], value: s[1] };
+      });
+    }
+
+    var tag = document.getElementById('product-schema');
+    if (!tag) {
+      tag = document.createElement('script');
+      tag.type = 'application/ld+json';
+      tag.id = 'product-schema';
+      document.head.appendChild(tag);
+    }
+    tag.textContent = JSON.stringify(ld);
+  }
+
   /* --------------------------------------------------------- repaint ---- */
 
   function paint() {
@@ -215,6 +295,7 @@
 
     renderShot();
     renderBuy();
+    paintSeo(p);
   }
 
   paint();

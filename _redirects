@@ -1,0 +1,20 @@
+# Netlify redirects. Format:  /from  /to  [status]
+#
+# Extensionless paths are already handled by Netlify's Pretty URLs, which also
+# rewrote the site's own links. These entries keep the .html forms working for
+# anything already bookmarked or linked, so nothing that ever pointed here 404s.
+/index.html          /              301
+/shop.html           /shop          301
+/product.html        /product       301
+/build-custom.html   /build-custom  301
+/contact.html        /contact       301
+# NOT /thanks.html — that is the contact form's POST target. A 301 on a POST
+# is turned into a GET by the browser and the submitted fields are dropped,
+# so a rule here would silently swallow every enquiry. Pretty URLs already
+# serves /thanks; this path needs no rule and must not have one.
+
+# TODO: KC's previous site. Add one line per old URL that has inbound links or
+# rankings, mapping it to its closest page here, e.g.
+#   /pages/about        /contact       301
+#   /collections/all    /shop          301
+# Without these, every old link earns a 404 and its ranking is thrown away.
