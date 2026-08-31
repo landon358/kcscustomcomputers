@@ -44,6 +44,25 @@ window.SHOPIFY_CONFIG = {
     deal:  'my-pcs'        // "One Time Deals"  -> the one-time deals row
   },
 
+  /* Every OTHER collection in the store becomes a section of its own, so a
+   * new category in Admin is a new section on the site with no code change.
+   * See "Adding a collection" below.
+   *
+   * Collections that should never become one. `frontpage` is created by
+   * Shopify on every store — it is not a category anyone made, and giving it
+   * a heading would invent one. Add a handle here to retire a section without
+   * deleting the collection.
+   */
+  hiddenCollections: ['frontpage'],
+
+  /* How many of KC's own collections the home page will show at once. The
+   * home page is a shop window, not the shop: past three extra rows the
+   * pre-built configurator and the deals row stop being what people see. If
+   * more collections than this have a home_order, the lowest numbers win and
+   * the console says which were left off.
+   */
+  homeMaxSections: 3,
+
   /* ---------------------------------------------------------------------
    * Adding a product without touching this repo
    *
@@ -76,6 +95,48 @@ window.SHOPIFY_CONFIG = {
    * Anything left blank falls back to that product's entry in products.js,
    * matched through the handles map below. A product with neither still
    * sells fine — it just shows an empty spec table.
+   * ------------------------------------------------------------------- */
+
+  /* ---------------------------------------------------------------------
+   * Adding a collection — a new section of the shop
+   *
+   * 1. Products -> Collections -> Create collection. Its NAME becomes the
+   *    heading and its DESCRIPTION becomes the line underneath, so both are
+   *    worth writing properly. Add the machines that belong in it.
+   * 2. Publish it to the Online Store sales channel. An unpublished
+   *    collection is invisible to this site, exactly like an unpublished
+   *    product.
+   *
+   * That is enough. It appears on the shop page on the next page load.
+   *
+   * 3. To put it on the HOME page as well, give the collection a metafield —
+   *    Settings -> Custom data -> Collections:
+   *
+   *      home_order   (integer)  its position on the home page. 1 sits
+   *                              directly under the one-time deals, 2 under
+   *                              that, and so on. LEAVE IT EMPTY and the
+   *                              collection stays on the shop page only —
+   *                              which is the default on purpose, so a
+   *                              half-finished category cannot appear on the
+   *                              front page by accident.
+   *      shop_order   (integer)  its position on the shop page. Collections
+   *                              without one sort after those with one, in
+   *                              alphabetical order.
+   *      eyebrow      (text)     the small line above the heading, e.g.
+   *                              "New this month". Optional.
+   *
+   *    Every one of these needs "Storefront access" ticked, same as the
+   *    product metafields. Without it the field reads back as empty and the
+   *    collection quietly behaves as though you never set it.
+   *
+   * Notes
+   *   - An empty collection renders nothing at all. No heading over a blank
+   *     row, so a category can be created before it is filled.
+   *   - A machine may sit in several collections. It is listed in each, and
+   *     the Pre-Builts and One Time Deals collections still decide what the
+   *     configurator and the deals row show.
+   *   - Products inside a section run in Shopify's manual order, so dragging
+   *     them around in Admin reorders the site.
    * ------------------------------------------------------------------- */
 
   /* The live products were listed before this site existed, so their handles

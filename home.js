@@ -382,22 +382,67 @@
     $('cfg-buy').href = 'product.html?id=' + p.id;
   }
 
-  function renderDeals() {
-    $('deal-grid').innerHTML = window.PRODUCTS.filter(function (p) { return p.kind === 'deal'; }).map(function (p) {
-      var mem = (p.specs.filter(function (s) { return s[0] === 'Memory'; })[0] || [])[1];
-      var sto = (p.specs.filter(function (s) { return s[0] === 'Storage'; })[0] || [])[1];
-      var cse = (p.specs.filter(function (s) { return s[0] === 'Case'; })[0] || [])[1];
-      // no stock pill on the home row — the shop grid is where stock is read
-      return '<a class="card card--deal' + (p.inStock ? '' : ' card--out') + '" href="product.html?id=' + p.id + '">' +
-        '<span class="card__shot">' +
-          '<img src="' + p.images[0] + '" alt="' + p.name + '">' +
+  /* The compact card every home row uses. `pill` is the small blue badge the
+   * one-time deals carry; the collections KC adds have nothing to claim there,
+   * so they pass nothing.
+   */
+  function compactCard(p, pill) {
+    var spec = function (label) {
+      return (p.specs.filter(function (s) { return s[0] === label; })[0] || [])[1];
+    };
+    // no stock pill on the home rows — the shop grid is where stock is read
+    return '<a class="card card--deal' + (p.inStock ? '' : ' card--out') + '" href="product.html?id=' + p.id + '">' +
+      '<span class="card__shot">' +
+        '<img src="' + p.images[0] + '" alt="' + p.name + '" loading="lazy" decoding="async">' +
+      '</span>' +
+      '<span class="card__body">' +
+        '<span class="card__title"><span class="price">' + window.money(p.price) + '</span>' +
+        (pill ? '<span class="pill pill--blue">' + pill + '</span>' : '') + '</span>' +
+        '<span class="name">' + p.name + '</span>' +
+        '<span class="sub">' +
+          [spec('Memory'), spec('Storage'), spec('Case')].filter(Boolean).join(' &middot; ') +
         '</span>' +
-        '<span class="card__body">' +
-          '<span class="card__title"><span class="price">' + window.money(p.price) + '</span>' +
-          '<span class="pill pill--blue">1 of 1</span></span>' +
-          '<span class="name">' + p.name + '</span>' +
-          '<span class="sub">' + [mem, sto, cse].filter(Boolean).join(' &middot; ') + '</span>' +
-        '</span></a>';
+      '</span></a>';
+  }
+
+  function renderDeals() {
+    var deals = window.PRODUCTS.filter(function (p) { return p.kind === 'deal'; });
+    $('deal-grid').innerHTML = deals.map(function (p) { return compactCard(p, '1 of 1'); }).join('');
+    // KC sells the one-offs as he gets them, so there will be stretches with
+    // none. Hide the section rather than stand its heading over a blank row.
+    var section = $('deals');
+    if (section) section.hidden = !deals.length;
+  }
+
+  /* Collections KC has given a home_order, in the order he asked for.
+   *
+   * One row of four each. The home page is a shop window rather than the shop,
+   * so a filled-up category adds a row, not twelve cards — the heading link
+   * carries the rest to the shop page, where the section is listed in full.
+   */
+  function renderCollections(sections) {
+    var host = $('home-collections');
+    if (!host) return;
+    var esc = window.Shopify.esc;
+
+    host.innerHTML = window.Shopify.homeSections(sections).map(function (s) {
+      var shown = s.products.slice(0, 4);
+      return '<section class="section section--tight" id="home-' + esc(s.handle) + '">' +
+        '<div class="section__head">' +
+          (s.eyebrow ? '<span class="eyebrow">' + esc(s.eyebrow) + '</span>' : '') +
+          '<h2>' + esc(s.title) + '</h2>' +
+          '<a class="spacer" style="font:600 13.5px var(--ui);color:var(--blue)" ' +
+            'href="shop.html#collection-' + esc(s.handle) + '">' +
+            (s.products.length > shown.length
+              ? 'See all ' + s.products.length + ' &rarr;'
+              : 'See all &rarr;') +
+          '</a>' +
+        '</div>' +
+        (s.description ? '<p class="section__lede">' + esc(s.description) + '</p>' : '') +
+        '<div class="grid grid--4">' +
+          shown.map(function (p) { return compactCard(p, ''); }).join('') +
+        '</div>' +
+      '</section>';
     }).join('');
   }
 
@@ -412,16 +457,19 @@
 
   renderConfig();
   renderDeals();
+  renderCollections([]);
   readScroll();
   eased = target;
   fitCallouts();
   requestAnimationFrame(frame);
   initVideo();
 
-  // Live Shopify pricing and stock, once it arrives.
-  window.Shopify.loadProducts().then(function (list) {
-    window.PRODUCTS = list;
+  // Live Shopify pricing, stock and collections, once they arrive. The static
+  // catalogue has no collections, so the first pass above renders none.
+  window.Shopify.loadCatalogue().then(function (cat) {
+    window.PRODUCTS = cat.products;
     renderConfig();
     renderDeals();
+    renderCollections(cat.sections);
   });
 })();

@@ -184,12 +184,47 @@
     'query Products($first: Int!) { products(first: $first) { edges { node { ' +
     PRODUCT_FIELDS + ' } } } }';
 
-  // Collections are the authority on which section a machine belongs to, read
-  // in Shopify's manual sort order so Admin controls the running order too.
-  var SECTIONS_QUERY =
-    'query Sections($prime: String!, $deal: String!, $first: Int!) {' +
-    '  prime: collection(handle: $prime) { products(first: $first, sortKey: MANUAL) { nodes { ' + PRODUCT_FIELDS + ' } } }' +
-    '  deal:  collection(handle: $deal)  { products(first: $first, sortKey: MANUAL) { nodes { ' + PRODUCT_FIELDS + ' } } }' +
+  /* Collection-level metafields, so a section can carry its own settings.
+   * Same two namespaces as products, for the same reason: Shopify's
+   * Add-definition screen defaults to `custom`, and a field created there
+   * instead of in `specs` reads back as null with nothing to say why.
+   *
+   *   home_order  which position this collection takes on the home page.
+   *               Not set means it does not appear there at all.
+   *   shop_order  its position on the shop page. Not set sorts it after the
+   *               numbered ones, alphabetically.
+   *   eyebrow     the small line above the heading. Optional.
+   *
+   * The heading and the line under it come from the collection's own title
+   * and description, which every collection has already — so a collection
+   * with no metafields at all still renders correctly.
+   */
+  var COLLECTION_META_KEYS = ['home_order', 'shop_order', 'eyebrow'];
+  var COLLECTION_META_IDS = META_NAMESPACES.map(function (ns) {
+    return COLLECTION_META_KEYS.map(function (k) {
+      return '{namespace: "' + ns + '", key: "' + k + '"}';
+    }).join(' ');
+  }).join(' ');
+
+  /* Every collection, and what is in it.
+   *
+   * Sections used to be two named lookups, which meant a new category in
+   * Admin was invisible until someone edited this file. Reading the whole
+   * list instead is what lets KC add one himself.
+   *
+   * Products come back in Shopify's manual sort order, so dragging them
+   * around in Admin reorders the section. The sizes below are not arbitrary:
+   * the Storefront API bills a query by the rows it could return, out of 1000,
+   * and 20 collections x 30 products with all the metafields attached costs
+   * 526. Raising either much further starts refusing the query outright.
+   */
+  var CATALOGUE_QUERY =
+    'query Catalogue($cols: Int!, $per: Int!) {' +
+    '  collections(first: $cols) { nodes {' +
+    '    handle title description' +
+    '    metafields(identifiers: [' + COLLECTION_META_IDS + ']) { namespace key value }' +
+    '    products(first: $per, sortKey: MANUAL) { nodes { ' + PRODUCT_FIELDS + ' } }' +
+    '  } }' +
     '}';
 
   // The live listings predate this site, so their handles are not the
@@ -319,37 +354,175 @@
     });
   }
 
-  // Resolves to a product array either way: Shopify when configured and
-  // reachable, the static catalogue otherwise. Never rejects.
-  function loadProducts() {
-    if (!configured) return Promise.resolve(ladder(staticCatalogue()));
+  /* ------------------------------------------------------- sections ---- */
 
+  // Metafield values arrive as strings, and KC may well type "1." or " 2".
+  // Anything that is not a number at all — including the empty string a
+  // cleared field leaves behind — reads as "not set", which is what decides
+  // whether a collection appears on the home page.
+  function order(v) {
+    if (v === undefined || v === null || String(v).trim() === '') return null;
+    var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+    return isFinite(n) ? n : null;
+  }
+
+  // Collections nobody made. `frontpage` is created by Shopify itself on every
+  // store; putting a heading on the page for it would be inventing a category.
+  var HIDDEN = (CFG.hiddenCollections || ['frontpage']).map(String);
+
+  // Escape for the collection title, description and eyebrow. Unlike the rest
+  // of the catalogue these are free text typed in Admin, and "Ryzen & Radeon"
+  // should render as itself rather than as a broken entity.
+  function esc(str) {
+    return String(str === undefined || str === null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function buildCatalogue(nodes) {
     var C = CFG.collections || {};
-    var byCollection = (C.prime || C.deal)
-      ? query(SECTIONS_QUERY, { prime: C.prime || '', deal: C.deal || '', first: 40 })
-          .then(function (data) {
-            var list = [];
-            ['prime', 'deal'].forEach(function (kind) {
-              var col = data[kind];
-              if (!col) return;
-              col.products.nodes.forEach(function (n) { list.push(normalise(n, kind)); });
-            });
-            // A renamed or unpublished collection resolves to null rather than
-            // erroring, so treat an empty result as a miss and go flat.
-            if (!list.length) throw new Error('collections empty or not published to this channel');
-            return ladder(list);
-          })
-      : Promise.reject(new Error('no collections configured'));
+    var kindOf = function (h) {
+      return h === C.prime ? 'prime' : (h === C.deal ? 'deal' : h);
+    };
 
-    return byCollection
+    /* The prime grid and the deals row filter on `kind`, and a machine can sit
+     * in several collections at once — a Prime M could reasonably also be in
+     * "Workstations". So the two reserved collections are read first and the
+     * first one to claim a product sets its kind; later collections still list
+     * it, they just do not re-badge it. Without this the sections KC adds
+     * could quietly empty the home configurator.
+     */
+    var rank = function (col) {
+      var k = kindOf(col.handle);
+      return k === 'prime' ? 0 : (k === 'deal' ? 1 : 2);
+    };
+    var ordered = nodes.slice().sort(function (a, b) { return rank(a) - rank(b); });
+
+    var seen = {};
+    var sections = [];
+
+    ordered.forEach(function (col) {
+      if (!col || !col.products || HIDDEN.indexOf(col.handle) !== -1) return;
+
+      var kind = kindOf(col.handle);
+      var meta = metaMap(col.metafields);
+      var members = [];
+
+      col.products.nodes.forEach(function (n) {
+        var id = siteId(n.handle);
+        if (!seen[id]) seen[id] = normalise(n, kind);
+        members.push(seen[id]);
+      });
+
+      // An empty collection is a category KC has started, not a section with
+      // nothing to say. Rendering it would put a heading over a blank row.
+      if (!members.length) return;
+
+      sections.push({
+        handle: col.handle,
+        title: col.title || col.handle,
+        eyebrow: meta.eyebrow || '',
+        description: String(col.description || '').trim(),
+        homeOrder: order(meta.home_order),
+        shopOrder: order(meta.shop_order),
+        // The two the page already has hard-coded blocks for. They are still
+        // returned, so anything wanting the full picture can see them, but the
+        // generic renderers skip them or the page would show them twice.
+        reserved: kind === 'prime' || kind === 'deal',
+        kind: kind,
+        products: ladder(members)
+      });
+    });
+
+    var products = [];
+    for (var id in seen) {
+      if (Object.prototype.hasOwnProperty.call(seen, id)) products.push(seen[id]);
+    }
+    return { products: ladder(products), sections: sections };
+  }
+
+  // Shop page: everything KC added himself, numbered ones first in his order,
+  // then the rest alphabetically. A collection with no metafields still lands
+  // somewhere predictable rather than wherever Shopify happened to list it.
+  function shopSections(sections) {
+    return (sections || []).filter(function (s) { return !s.reserved; })
+      .sort(function (a, b) {
+        var ao = a.shopOrder, bo = b.shopOrder;
+        if (ao !== null && bo !== null && ao !== bo) return ao - bo;
+        if (ao !== null && bo === null) return -1;
+        if (ao === null && bo !== null) return 1;
+        return a.title.localeCompare(b.title);
+      });
+  }
+
+  /* Home page: opt-in only. A collection appears there when it has a
+   * home_order, and that number is its position.
+   *
+   * Silence meaning "no" rather than "yes, at the end" is the whole point —
+   * a half-built category should not be able to reach the front page before
+   * KC has decided it belongs there.
+   */
+  function homeSections(sections) {
+    var picked = (sections || []).filter(function (s) {
+      return !s.reserved && s.homeOrder !== null;
+    }).sort(function (a, b) { return a.homeOrder - b.homeOrder; });
+
+    var cap = CFG.homeMaxSections;
+    cap = (typeof cap === 'number' && cap >= 0) ? cap : 3;
+    if (picked.length > cap) {
+      console.warn('[shopify] ' + picked.length + ' collections have a home_order but the ' +
+        'home page shows ' + cap + ' (SHOPIFY_CONFIG.homeMaxSections). Not shown: ' +
+        picked.slice(cap).map(function (s) { return s.title; }).join(', '));
+    }
+    return picked.slice(0, cap);
+  }
+
+  /* Resolves to { products, sections } either way: Shopify when configured and
+   * reachable, the static catalogue otherwise. Never rejects.
+   *
+   * Both fallbacks return no sections. That is deliberate — sections only
+   * exist in Shopify, and inventing them from products.js would put headings
+   * on the page for categories the store does not have.
+   *
+   * Memoised, because the shop page asks for products and sections and there
+   * is no reason to buy the same 526-point query twice.
+   */
+  var cataloguePromise = null;
+
+  function loadCatalogue() {
+    if (cataloguePromise) return cataloguePromise;
+
+    var flat = function (list) { return { products: ladder(list), sections: [] }; };
+
+    var live = configured
+      ? query(CATALOGUE_QUERY, { cols: 20, per: 30 }).then(function (data) {
+          var nodes = (data.collections && data.collections.nodes) || [];
+          var cat = buildCatalogue(nodes);
+          // A store with no collections published to this channel resolves to
+          // an empty list rather than erroring, so treat that as a miss.
+          if (!cat.products.length) throw new Error('no collections published to this channel');
+          return cat;
+        })
+      : Promise.reject(new Error('Shopify not configured'));
+
+    cataloguePromise = live
       .catch(function (err) {
-        console.warn('[shopify] collections unavailable (' + err.message + '), reading all products');
-        return loadFlat();
+        if (configured) {
+          console.warn('[shopify] collections unavailable (' + err.message + '), reading all products');
+        }
+        return loadFlat().then(flat);
       })
       .catch(function (err) {
         console.warn('[shopify] falling back to static catalogue:', err.message);
-        return ladder(staticCatalogue());
+        return flat(staticCatalogue());
       });
+
+    return cataloguePromise;
+  }
+
+  // The three pages that only want a product list still get one.
+  function loadProducts() {
+    return loadCatalogue().then(function (c) { return c.products; });
   }
 
   /* ------------------------------------------------------------- cart ---- */
@@ -487,6 +660,10 @@
     configured: configured,
     query: query,
     loadProducts: loadProducts,
+    loadCatalogue: loadCatalogue,
+    shopSections: shopSections,
+    homeSections: homeSections,
+    esc: esc,
     accountUrl: function () {
       if (CFG.accountUrl) return CFG.accountUrl;
       return configured ? 'https://' + CFG.domain + '/account' : null;

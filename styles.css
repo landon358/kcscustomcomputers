@@ -382,6 +382,22 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
 }
 .section__head .spacer { margin-left: auto; }
 
+/* A collection's own description, from Shopify. Sits under the heading and
+   above the row, at the width prose stays readable at rather than the full
+   grid — a category blurb is a sentence, not a column of text. */
+.section__lede {
+  margin: -14px 0 26px;
+  max-width: 620px;
+  font: 400 16px/1.65 var(--ui);
+  color: var(--ink-2);
+}
+
+/* A section renders nothing when its collection is empty, and .section sets
+   padding without setting display, so the UA rule would already win. Stated
+   anyway: an empty row is the failure this guards against, and it should not
+   depend on a rule further up staying the way it is. */
+.section[hidden] { display: none; }
+
 .manifesto {
   padding: 96px var(--pad-x) 20px;
   max-width: 1180px;

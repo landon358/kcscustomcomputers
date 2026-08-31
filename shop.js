@@ -58,19 +58,65 @@
       '</article>';
   }
 
-  function paint() {
+  /* A collection KC added himself.
+   *
+   * It gets the same full card as the pre-builts rather than the compact deal
+   * one: a new category is an unknown quantity, and the card carrying its CPU,
+   * GPU, memory and storage says what the machine is without anyone having to
+   * click. Heading, sub-line and eyebrow are his text, escaped.
+   */
+  function collectionSection(s) {
+    var esc = window.Shopify.esc;
+    return '' +
+      '<section class="section section--tight" id="collection-' + esc(s.handle) + '">' +
+        '<div class="section__head">' +
+          (s.eyebrow ? '<span class="eyebrow">' + esc(s.eyebrow) + '</span>' : '') +
+          '<h2>' + esc(s.title) + '</h2>' +
+        '</div>' +
+        (s.description ? '<p class="section__lede">' + esc(s.description) + '</p>' : '') +
+        '<div class="grid grid--3">' + s.products.map(primeCard).join('') + '</div>' +
+      '</section>';
+  }
+
+  function paint(sections) {
     document.getElementById('prime-grid').innerHTML =
       window.PRODUCTS.filter(function (p) { return p.kind === 'prime'; }).map(primeCard).join('');
 
-    document.getElementById('deal-grid').innerHTML =
-      window.PRODUCTS.filter(function (p) { return p.kind === 'deal'; }).map(dealCard).join('');
+    var deals = window.PRODUCTS.filter(function (p) { return p.kind === 'deal'; });
+    document.getElementById('deal-grid').innerHTML = deals.map(dealCard).join('');
+    // Hide the heading rather than stand it over an empty row. KC sells the
+    // one-offs as he gets them, so there will be stretches with none.
+    var dealSection = document.getElementById('deal-grid').closest('section');
+    if (dealSection) dealSection.hidden = !deals.length;
+
+    var host = document.getElementById('collection-sections');
+    if (host) {
+      host.innerHTML = window.Shopify.shopSections(sections).map(collectionSection).join('');
+    }
+  }
+
+  /* The home page links to a section here by its anchor, but the sections do
+   * not exist when the browser goes looking for it — they arrive with the
+   * Shopify response, several hundred milliseconds later. So the jump has to
+   * be made again once the target is actually on the page.
+   *
+   * Only from the top, and only once: if the visitor has started reading by
+   * the time the data lands, yanking them elsewhere is worse than the link
+   * quietly not having worked.
+   */
+  function honourHash() {
+    if (!window.location.hash || window.scrollY > 0) return;
+    var target = document.getElementById(window.location.hash.slice(1));
+    if (target) target.scrollIntoView();
   }
 
   // Paint from the static catalogue immediately, then again with live
-  // Shopify pricing and stock once it lands.
-  paint();
-  window.Shopify.loadProducts().then(function (list) {
-    window.PRODUCTS = list;
-    paint();
+  // Shopify pricing, stock and collections once they land. The static
+  // catalogue has no collections, so the first pass renders none.
+  paint([]);
+  window.Shopify.loadCatalogue().then(function (cat) {
+    window.PRODUCTS = cat.products;
+    paint(cat.sections);
+    honourHash();
   });
 })();
