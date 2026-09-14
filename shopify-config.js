@@ -147,9 +147,15 @@ window.SHOPIFY_CONFIG = {
    *                              which is the default on purpose, so a
    *                              half-finished category cannot appear on the
    *                              front page by accident.
-   *      shop_order   (integer)  its position on the shop page. Collections
-   *                              without one sort after those with one, in
-   *                              alphabetical order.
+   *      shop_order   (integer)  its position on the shop page. This one
+   *                              works on EVERY section there, AMD Prime and
+   *                              One Time Deals included, so the whole page
+   *                              runs 1, 2, 3... Sections without a number go
+   *                              after the numbered ones. Two collections
+   *                              given the same number sit in alphabetical
+   *                              order. "Nothing here quite fits?" is always
+   *                              last. (On the HOME page, AMD Prime and One
+   *                              Time Deals still have fixed spots.)
    *      eyebrow      (text)     the small line above the heading, e.g.
    *                              "New this month". Optional.
    *

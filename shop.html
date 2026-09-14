@@ -62,11 +62,22 @@
   <p>Five configurations we build over and over, because they hit the right price for the way people actually play. Assembled, stress tested and boxed &mdash; pickup in 24 hours.</p>
 </header>
 
-<section class="section" style="padding-top:48px">
+<!-- Every section of the shop, in the order KC's shop_order numbers ask for.
+     shop.js sorts these and appends one section per extra collection, so
+     nothing below is in its final position until the Shopify data lands. -->
+<div id="shop-flow">
+
+<section class="section section--tight section--lead" id="prime-section">
+  <!-- Filled from the collection's own name and eyebrow. Hidden until then so
+       the fallback text does not flash and swap. -->
+  <div class="section__head" id="prime-head" style="visibility:hidden">
+    <span class="eyebrow" id="prime-eyebrow" hidden></span>
+    <h2 id="prime-title">Prime Series</h2>
+  </div>
   <div class="grid grid--3" id="prime-grid"></div>
 </section>
 
-<section class="section section--tight">
+<section class="section section--tight" id="deal-section">
   <div class="section__head">
     <span class="eyebrow">One-time deals</span>
     <h2>One of one. When it's gone, it's gone.</h2>
@@ -74,9 +85,7 @@
   <div class="grid grid--4" id="deal-grid"></div>
 </section>
 
-<!-- Every other collection in the store, one section each, filled by shop.js.
-     Nothing is hard-coded here: adding a collection in Shopify adds a section. -->
-<div id="collection-sections"></div>
+</div>
 
 <section class="section">
   <div class="custom" style="display:flex;align-items:center;gap:40px;flex-wrap:wrap;padding:44px 48px;border-radius:24px">

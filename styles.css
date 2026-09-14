@@ -379,6 +379,10 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
 
 .section { padding: 90px var(--pad-x) 30px; }
 .section--tight { padding-top: 70px; }
+/* Whichever shop section KC has put first sits closer to the page title. It
+   used to be hard-wired onto the pre-built grid, which is only first when
+   shop_order says so. */
+.section.section--lead { padding-top: 48px; }
 
 .section__head {
   display: flex;
