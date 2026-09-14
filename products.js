@@ -51,4 +51,14 @@ window.PRODUCTS_STATIC = [
 window.PRODUCTS = window.PRODUCTS_STATIC.slice();
 
 window.byId = function (id) { return window.PRODUCTS.find(function (p) { return p.id === id; }) || window.PRODUCTS[2]; };
-window.money = function (n) { return '$' + Math.round(n).toLocaleString('en-US'); };
+// Whole dollars when the price is whole — every PC is — and cents when it is
+// not. Rounding everything read fine at $1,850 and would print a $14.99 stand
+// as $15, and an add-on total that disagreed with the cart by a cent a line.
+window.money = function (n) {
+  n = Number(n) || 0;
+  var cents = Math.round(n * 100) % 100 !== 0;
+  return '$' + n.toLocaleString('en-US', {
+    minimumFractionDigits: cents ? 2 : 0,
+    maximumFractionDigits: cents ? 2 : 0
+  });
+};

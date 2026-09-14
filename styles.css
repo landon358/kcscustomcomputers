@@ -50,6 +50,18 @@ a { color: var(--ink); text-decoration: none; }
 a:hover { color: var(--blue); }
 
 img { display: block; max-width: 100%; }
+
+/* `hidden` has to mean hidden. The browser's own rule for it loses to any
+   class that sets display — .pill is inline-block, .modal is flex — so
+   toggling el.hidden silently did nothing on those, and pages were patching
+   it one element at a time. */
+[hidden] { display: none !important; }
+
+/* Read by screen readers, not shown. */
+.sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 button { font-family: inherit; }
 
 h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
@@ -350,18 +362,17 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   background: var(--blue);
 }
 .co-label { position: absolute; white-space: nowrap; }
+/* One line per label now, centred on the end of its leader line. The label's
+   top sits exactly on the line and the text is pulled up by half its own line
+   height, in em, so it stays centred at every viewport size. It cannot be a
+   translateY: home.js writes transform on every label to animate it in. */
 .co-label b {
   display: block;
-  font: 600 clamp(11px, 1.15vw, 15px) var(--ui);
+  font: 600 clamp(12px, 1.25vw, 17px) var(--ui);
+  line-height: 1.2;
+  margin-top: -0.6em;
   letter-spacing: -0.005em;
   color: var(--ink);
-}
-.co-label i {
-  display: block;
-  font: 500 clamp(9.5px, 0.95vw, 12.5px) var(--ui);
-  font-style: normal;
-  color: var(--ink-3);
-  margin-top: 2px;
 }
 
 /* ----------------------------------------------------------- sections --- */
@@ -392,11 +403,6 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   color: var(--ink-2);
 }
 
-/* A section renders nothing when its collection is empty, and .section sets
-   padding without setting display, so the UA rule would already win. Stated
-   anyway: an empty row is the failure this guards against, and it should not
-   depend on a rule further up staying the way it is. */
-.section[hidden] { display: none; }
 
 .manifesto {
   padding: 96px var(--pad-x) 20px;
@@ -467,6 +473,21 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   border-left: 1px solid var(--line-3);
 }
 .config__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* Desktop only. The photo used to be the wider column at a fixed 4:5, so on a
+   laptop it stood ~800px tall and the spec panel beside it ran out of things
+   to say halfway down. Now the panel sets the height and the photo fills
+   whatever that is, in the narrower column — the tile is as tall as its
+   content and no taller. Mobile keeps the stacked 4:5 layout untouched: the
+   max-width: 860px rules never see any of this. */
+@media (min-width: 861px) {
+  .config { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); }
+  .config__shot {
+    aspect-ratio: auto;
+    align-self: stretch;
+    min-height: 440px;
+  }
+}
 
 .chip {
   font: 600 12.5px var(--ui);
@@ -772,6 +793,138 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
 }
 .badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 
+/* ---------------------------------------------- options and add-ons --- */
+
+/* A colour, length, or any other option an accessory offers. Same pill shape
+   as the configurator chips, but the chosen one is outlined rather than filled
+   so its swatch stays visible — a filled black pill would swallow a black
+   swatch. */
+.opts { display: flex; flex-direction: column; gap: 18px; margin-top: 24px; }
+.choice__label { font: 600 11px var(--ui); letter-spacing: 0.18em; color: var(--ink-4); text-transform: uppercase; }
+.choice__label b { margin-left: 6px; font: 600 13px var(--ui); letter-spacing: 0; text-transform: none; color: var(--ink); }
+.choice__values { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+.optval {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 13px var(--ui);
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, color .15s ease;
+}
+.optval:hover { border-color: var(--blue); color: var(--ink); }
+.optval.is-on { border-color: var(--ink); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.optval.is-out { color: var(--ink-4); }
+.optval.is-out:not(.is-on) { text-decoration: line-through; }
+.optval:disabled { cursor: not-allowed; }
+.optval:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.optval--sm { gap: 6px; padding: 4px 10px 4px 6px; font-size: 12px; }
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 999px;
+  /* a white stand's swatch has to show on a white pill */
+  box-shadow: inset 0 0 0 1px rgba(11, 27, 63, 0.22);
+}
+.optval--sm .swatch { width: 12px; height: 12px; }
+
+/* Accessories offered on a PC's page, above the button that adds them. */
+.addons {
+  margin-top: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+.addons__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line-3);
+}
+.addons__head a { font: 600 12.5px var(--ui); color: var(--blue); }
+.addons__list { list-style: none; margin: 0; padding: 0; }
+
+.addon {
+  display: grid;
+  grid-template-columns: auto 56px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  transition: background .15s ease;
+}
+.addon + .addon { border-top: 1px solid var(--line-3); }
+.addon.is-on { background: #F5F8FF; }
+/* The label holds the tick box and the photo, so tapping either one toggles;
+   `contents` lets both still sit in the row's grid as their own columns. */
+.addon__pick { display: contents; cursor: pointer; }
+.addon__pick input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.addon__box {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1.5px solid var(--line-2);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.addon__box::after {
+  content: '';
+  width: 6px;
+  height: 11px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-1px) rotate(45deg);
+  opacity: 0;
+}
+.addon__pick input:checked + .addon__box { background: var(--blue); border-color: var(--blue); }
+.addon__pick input:checked + .addon__box::after { opacity: 1; }
+.addon__pick input:focus-visible + .addon__box { outline: 2px solid var(--blue); outline-offset: 2px; }
+.addon__shot {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--plate);
+  object-fit: cover;
+  cursor: pointer;
+}
+.addon__name { font: 600 14px/1.3 var(--ui); color: var(--ink); }
+.addon__vals { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.addon__select {
+  font: 500 12.5px var(--ui);
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+  max-width: 100%;
+}
+.addon__price {
+  font: 600 14px var(--ui);
+  color: var(--ink-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessory card: the deal card's shape, with the colours it comes in. */
+/* KC's accessory shots are photographs on a desk, not cut-outs on white, so
+   they fill the frame instead of floating in padding like the PC renders. */
+.card--accessory .card__shot img { object-fit: cover; padding: 0; }
+.card--accessory .price small { font: 600 12px var(--ui); color: var(--ink-3); letter-spacing: 0; }
+.swatches { display: inline-flex; gap: 5px; }
+
 .related { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
 .related .card__shot img { height: 150px; padding: 12px 0; }
 .related .card__body { padding: 16px 18px 18px; }
@@ -951,6 +1104,21 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
 }
 
 @media (max-width: 520px) {
+  /* A phone cannot spare a column for the price: it squeezed names and colour
+     buttons onto two lines each. The price drops under the name instead, and
+     the colour buttons grow to a size a thumb can hit reliably. */
+  .addon {
+    grid-template-columns: auto 46px minmax(0, 1fr);
+    grid-template-areas: "box shot body" "box shot price";
+    column-gap: 12px;
+    row-gap: 6px;
+    padding: 12px 14px;
+  }
+  .addon__box   { grid-area: box; }
+  .addon__shot  { grid-area: shot; width: 46px; height: 46px; }
+  .addon__body  { grid-area: body; }
+  .addon__price { grid-area: price; font-size: 13px; }
+  .optval--sm   { padding: 8px 12px 8px 9px; }
   .nav__logo { font-size: 14px; }
   .nav__actions .btn { padding: 0 11px; font-size: 12px; }
   .related { grid-template-columns: 1fr; }

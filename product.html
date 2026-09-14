@@ -58,7 +58,7 @@
 
 <section class="section" style="padding-top:118px">
   <nav class="crumbs">
-    <a href="shop.html">Shop Pre-Built</a><span>/</span><span id="crumb-name" style="color:var(--ink-2)"></span>
+    <a href="shop.html" id="crumb-link">Shop Pre-Built</a><span>/</span><span id="crumb-name" style="color:var(--ink-2)"></span>
   </nav>
 
   <div class="product">
@@ -77,8 +77,16 @@
 
       <div class="product__price">
         <b id="p-price"></b>
-        <span style="font:500 13px var(--ui);color:var(--ink-3)">Windows 11 Pro included &middot; no bloatware</span>
+        <span style="font:500 13px var(--ui);color:var(--ink-3)" id="p-price-note">Windows 11 Pro included &middot; no bloatware</span>
       </div>
+
+      <!-- Colour, length and any other choice an accessory offers. Empty and
+           hidden on a PC, which has nothing to choose. -->
+      <div class="opts" id="p-opts" hidden></div>
+
+      <!-- Accessories offered with a PC, added to the cart in the same click
+           as the build. Hidden on accessories themselves. -->
+      <div class="addons" id="p-addons" hidden></div>
 
       <div class="buybar">
         <div class="qty">
@@ -91,12 +99,12 @@
       </div>
       <div class="buynote" id="p-note"></div>
 
-      <div class="block">
+      <div class="block" id="p-specs-block">
         <div class="block__label">FULL SPECIFICATION</div>
         <div style="margin-top:12px" id="p-specs"></div>
       </div>
 
-      <div class="block" style="border-top:none;padding-top:0;margin-top:26px">
+      <div class="block" id="p-bench-block" style="border-top:none;padding-top:0;margin-top:26px">
         <div class="block__head">
           <div class="block__label">MEASURED ON THE BENCH</div>
           <div class="restabs" id="p-res" role="tablist" aria-label="Benchmark resolution"></div>
@@ -113,7 +121,7 @@
       <p class="product__blurb" id="p-blurb"></p>
 
       <div class="badges">
-        <span class="pill pill--outline">2-year labor warranty</span>
+        <span class="pill pill--outline" id="p-warranty">2-year labor warranty</span>
         <span class="pill pill--outline">Free local pickup</span>
         <span class="pill pill--outline">Insured nationwide shipping</span>
       </div>
@@ -123,7 +131,7 @@
 
 <section class="section" style="padding-top:76px">
   <div class="section__head">
-    <span class="eyebrow">Also on the bench</span>
+    <span class="eyebrow" id="p-related-label">Also on the bench</span>
     <a class="spacer" style="font:600 13.5px var(--ui);color:var(--blue)" href="shop.html">See everything &rarr;</a>
   </div>
   <div class="related" id="p-related"></div>

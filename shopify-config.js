@@ -40,8 +40,9 @@ window.SHOPIFY_CONFIG = {
    * dragging products around in Admin reorders the site.
    */
   collections: {
-    prime: 'pre-builts',   // "Pre-Builts"      -> shop grid + home configurator
-    deal:  'my-pcs'        // "One Time Deals"  -> the one-time deals row
+    prime:     'pre-builts',   // "AMD Prime"       -> shop grid + home configurator
+    deal:      'my-pcs',       // "One Time Deals"  -> the one-time deals row
+    accessory: 'accessories'   // "Accessories"     -> accessory cards + add-ons
   },
 
   /* Every OTHER collection in the store becomes a section of its own, so a
@@ -95,6 +96,33 @@ window.SHOPIFY_CONFIG = {
    * Anything left blank falls back to that product's entry in products.js,
    * matched through the handles map below. A product with neither still
    * sells fine — it just shows an empty spec table.
+   * ------------------------------------------------------------------- */
+
+  /* ---------------------------------------------------------------------
+   * Adding an accessory — stands, cables, anything that is not a PC
+   *
+   * 1. Create the product as normal. Its description IS shown on its product
+   *    page, unlike a PC's, so write it as a sentence or two for a buyer.
+   * 2. Put it in the collection called "Accessories". The site knows it by
+   *    its handle, `accessories` — Shopify makes that from the name, so keep
+   *    the name or the handle will change with it. Being in this collection
+   *    is what makes it an accessory: no spec table, no benchmarks, and
+   *    offered as an add-on on every PC's product page.
+   * 3. Colours, lengths and so on are Shopify OPTIONS, not metafields:
+   *    Admin -> the product -> Variants -> "Add options like size or color".
+   *    Name the option "Color" and give each value a plain colour name —
+   *    White, Black, Red — and the picker shows a swatch of that colour next
+   *    to the name. Anything else, like "Length: 60cm", shows as text.
+   *    Give each variant its own photo and the page switches to it when that
+   *    colour is picked.
+   *
+   * The Accessories collection is a normal shop section, so shop_order and
+   * home_order from the next note work on it too. A stand he ALSO files under
+   * another collection still renders as an accessory there.
+   *
+   * On a PC's product page, up to four in-stock accessories are offered as
+   * add-ons, cheapest first, with a link to the rest. Out-of-stock ones are
+   * left off rather than shown and disabled.
    * ------------------------------------------------------------------- */
 
   /* ---------------------------------------------------------------------

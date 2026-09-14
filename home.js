@@ -348,15 +348,17 @@
       return '<button class="chip' + (x.id === selected ? ' is-active' : '') + '" data-id="' + x.id + '">' + x.name + '</button>';
     }).join('');
 
-    // Pick the six by name, not by position. Taking the first six meant that
-    // adding a spec field anywhere above them silently changed the home page.
-    var want = ['CPU', 'Cooler', 'GPU', 'Memory', 'Storage', 'Power'];
+    // Pick rows by name, not by position. Taking the first N meant that adding
+    // a spec field anywhere above them silently changed the home page. Every
+    // hardware component is listed, in the product page's order; the OS is
+    // left to the line under the price, which already says it.
+    var want = ['CPU', 'Motherboard', 'Cooler', 'GPU', 'Memory', 'Storage', 'Power', 'Case'];
     var byLabel = {};
     p.specs.forEach(function (s) { byLabel[s[0]] = s[1]; });
     var picked = want.filter(function (l) { return byLabel[l]; })
                      .map(function (l) { return [l, byLabel[l]]; });
     // an unfamiliar catalogue still fills the panel rather than emptying it
-    if (!picked.length) picked = p.specs.slice(0, 6);
+    if (!picked.length) picked = p.specs.slice(0, 8);
 
     $('cfg-specs').innerHTML = picked.map(function (s) {
       return '<dl class="spec"><dt>' + (CFG_LABEL[s[0]] || s[0]) + '</dt><dd>' + s[1] + '</dd></dl>';
@@ -400,7 +402,10 @@
         (pill ? '<span class="pill pill--blue">' + pill + '</span>' : '') + '</span>' +
         '<span class="name">' + p.name + '</span>' +
         '<span class="sub">' +
-          [spec('Memory'), spec('Storage'), spec('Case')].filter(Boolean).join(' &middot; ') +
+          // an accessory has no memory or storage to list, so say what it comes in
+          (p.kind === 'accessory'
+            ? ((p.options && p.options[0]) ? window.Shopify.esc(p.options[0].values.join(' · ')) : '')
+            : [spec('Memory'), spec('Storage'), spec('Case')].filter(Boolean).join(' &middot; ')) +
         '</span>' +
       '</span></a>';
   }

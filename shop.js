@@ -58,6 +58,43 @@
       '</article>';
   }
 
+  /* An accessory: a stand, a cable. No spec rows to show, so the card says
+   * what the buyer can choose instead — the colours it comes in — with a swatch
+   * for each one a browser recognises as a colour.
+   */
+  function accessoryCard(p) {
+    var esc = window.Shopify.esc;
+    var out = !p.inStock;
+    var opts = p.options || [];
+    var first = opts[0];
+    var swatches = first ? first.values.map(function (v) {
+      var c = window.Shopify.colourOf(v);
+      return c ? '<span class="swatch" style="background:' + c + '" title="' + esc(v) + '"></span>' : '';
+    }).join('') : '';
+    var sub = first ? first.values.join(' &middot; ') : '';
+
+    return '' +
+      '<article class="card card--deal card--accessory' + (out ? ' card--out' : '') + '">' +
+        '<a class="card__shot" href="product.html?id=' + encodeURIComponent(p.id) + '">' +
+          '<span class="pill ' + (out ? 'pill--out' : 'pill--stock') + '">' + (out ? 'Out of stock' : 'In stock') + '</span>' +
+          (p.images[0] ? '<img src="' + esc(p.images[0]) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async">' : '') +
+        '</a>' +
+        '<div class="card__body">' +
+          '<div class="card__title">' +
+            '<span class="price">' + (p.priceMax > p.price ? '<small>From</small> ' : '') + window.money(p.price) + '</span>' +
+            (swatches ? '<span class="swatches">' + swatches + '</span>' : '') +
+          '</div>' +
+          '<a class="name" href="product.html?id=' + encodeURIComponent(p.id) + '">' + esc(p.name) + '</a>' +
+          (sub ? '<div class="sub">' + esc(first.name) + ': ' + sub + '</div>' : '') +
+          (out
+            ? '<span class="btn btn--disabled btn--block">Out of stock</span>'
+            : '<a class="btn btn--primary btn--block" href="product.html?id=' + encodeURIComponent(p.id) + '">' +
+                (opts.length > 1 ? 'Choose options'
+                  : (first ? 'Choose ' + esc(first.name.toLowerCase()) : 'View details')) + '</a>') +
+        '</div>' +
+      '</article>';
+  }
+
   /* A collection KC added himself.
    *
    * It gets the same full card as the pre-builts rather than the compact deal
@@ -67,6 +104,7 @@
    */
   function collectionSection(s) {
     var esc = window.Shopify.esc;
+    var allAccessories = s.products.every(function (p) { return p.kind === 'accessory'; });
     return '' +
       '<section class="section section--tight" id="collection-' + esc(s.handle) + '">' +
         '<div class="section__head">' +
@@ -74,7 +112,15 @@
           '<h2>' + esc(s.title) + '</h2>' +
         '</div>' +
         (s.description ? '<p class="section__lede">' + esc(s.description) + '</p>' : '') +
-        '<div class="grid grid--3">' + s.products.map(primeCard).join('') + '</div>' +
+        // The card follows the product, not the collection: a stand filed under
+        // "New this month" alongside a PC still gets the accessory card. A
+        // section of nothing but accessories uses the tighter four-up grid,
+        // since a stand does not need a PC card's width.
+        '<div class="grid ' + (allAccessories ? 'grid--4' : 'grid--3') + '">' +
+          s.products.map(function (p) {
+            return p.kind === 'accessory' ? accessoryCard(p) : primeCard(p);
+          }).join('') +
+        '</div>' +
       '</section>';
   }
 

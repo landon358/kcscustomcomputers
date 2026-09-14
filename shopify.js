@@ -87,13 +87,23 @@
     }).join(' ');
   }).join(' ');
 
+  /* Every variant, not just the first.
+   *
+   * A PC is one variant, so reading the first was all this ever needed. An
+   * accessory in four colours is four variants, each with its own price, stock
+   * and photograph, and the one the buyer picks is the one that has to reach
+   * the cart. Twenty covers colour x size with room to spare; a product with
+   * more than that is not something the picker should be presenting anyway.
+   */
   var PRODUCT_FIELDS = [
-    'id handle title availableForSale tags',
+    'id handle title availableForSale tags productType',
     'description',
-    'priceRange { minVariantPrice { amount currencyCode } }',
+    'priceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount } }',
     'images(first: 8) { edges { node { url altText } } }',
     'metafields(identifiers: [' + META_IDS + ']) { namespace key value }',
-    'variants(first: 1) { edges { node { id availableForSale quantityAvailable price { amount currencyCode } } } }'
+    'options { name optionValues { name } }',
+    'variants(first: 20) { edges { node { id title availableForSale quantityAvailable ' +
+      'price { amount currencyCode } image { url } selectedOptions { name value } } } }'
   ].join(' ');
 
   // Shopify returns one slot per identifier, null for the ones not set. Keys
@@ -213,10 +223,14 @@
    * list instead is what lets KC add one himself.
    *
    * Products come back in Shopify's manual sort order, so dragging them
-   * around in Admin reorders the section. The sizes below are not arbitrary:
-   * the Storefront API bills a query by the rows it could return, out of 1000,
-   * and 20 collections x 30 products with all the metafields attached costs
-   * 526. Raising either much further starts refusing the query outright.
+   * around in Admin reorders the section.
+   *
+   * The sizes are a ceiling on response time, not an API limit. An earlier
+   * version of this comment said the Storefront API refuses queries costing
+   * over 1000; that was never tested, and it is wrong — a query reporting a
+   * cost of 7536 comes back fine. What does grow is the payload, and only
+   * with what the store actually holds, so these are set generously above
+   * KC's catalogue rather than tuned to a budget that is not enforced.
    */
   var CATALOGUE_QUERY =
     'query Catalogue($cols: Int!, $per: Int!) {' +
@@ -235,8 +249,37 @@
 
   // Shopify product -> the shape the rest of the site already renders.
   // `section` is the collection the node came from, when it came from one.
+  /* Options a buyer actually chooses between.
+   *
+   * Shopify gives every product at least one option, even a product with no
+   * choices at all — it is called "Title" and its only value is "Default
+   * Title". Rendering that would put a one-button picker on every PC page. An
+   * option with a single value is not a choice either, so it is left off too.
+   */
+  function realOptions(node) {
+    return (node.options || []).map(function (o) {
+      return { name: o.name, values: (o.optionValues || []).map(function (v) { return v.name; }) };
+    }).filter(function (o) {
+      return o.values.length > 1 && !(o.name === 'Title' && o.values[0] === 'Default Title');
+    });
+  }
+
   function normalise(node, section) {
-    var variant = node.variants.edges.length ? node.variants.edges[0].node : null;
+    var variants = node.variants.edges.map(function (e) {
+      var v = e.node, opts = {};
+      (v.selectedOptions || []).forEach(function (o) { opts[o.name] = o.value; });
+      return {
+        id: v.id,
+        title: v.title,
+        available: v.availableForSale,
+        price: parseFloat(v.price.amount),
+        image: v.image ? v.image.url : null,
+        options: opts
+      };
+    });
+    // The variant a page opens on: the first one that can actually be bought,
+    // so an accessory whose first colour sold out does not open on a dead end.
+    var variant = variants.filter(function (v) { return v.available; })[0] || variants[0] || null;
     var images = node.images.edges.map(function (e) { return e.node.url; });
     var tags = (node.tags || []).map(function (t) { return String(t).toLowerCase(); });
     var id = siteId(node.handle);
@@ -277,13 +320,21 @@
       // Collection membership first, then a tag, then the catalogue. The live
       // products carry no tags, so without the collections everything would
       // read as a prime and the deals row would come up empty.
-      kind: section || (tags.indexOf('deal') !== -1 ? 'deal' : (local.kind || 'prime')),
+      // The tags are the fallback for when collections cannot be read at all, so
+      // an accessory tagged as one still does not render as a PC.
+      kind: section || (tags.indexOf('deal') !== -1 ? 'deal'
+        : (tags.indexOf('accessory') !== -1 ? 'accessory' : (local.kind || 'prime'))),
       popular: tags.indexOf('popular') !== -1 || !!local.popular,
-      price: Math.round(parseFloat(node.priceRange.minVariantPrice.amount)),
+      price: parseFloat(node.priceRange.minVariantPrice.amount),
+      // Set when variants differ in price, so a card can say "From $15"
+      // instead of claiming the cheapest colour's price for all of them.
+      priceMax: parseFloat((node.priceRange.maxVariantPrice || node.priceRange.minVariantPrice).amount),
       currency: node.priceRange.minVariantPrice.currencyCode,
       inStock: node.availableForSale,
       stockNote: local.stockNote,
       variantId: variant ? variant.id : null,
+      variants: variants,
+      options: realOptions(node),
       // Same reasoning: KC's own photographs of the machine he is actually
       // selling, and the catalogue art only if the store has none.
       images: images.length ? images : (local.images || []),
@@ -307,7 +358,12 @@
        * The plumbing stays so a `blurb` metafield fills it the moment there
        * is real prose to show. Until then the section hides itself.
        */
-      blurb: meta.blurb || local.blurb || '',
+      // ...except on an accessory. KC's PC descriptions are spec dumps, but a
+      // stand has no spec table for the description to repeat, so there it is
+      // the only prose there is and it is shown.
+      blurb: meta.blurb || local.blurb ||
+        (section === 'accessory' || tags.indexOf('accessory') !== -1
+          ? String(node.description || '').trim() : ''),
       specs: metaSpecs.length ? metaSpecs : (local.specs || []),
       fps: fps.fps,
       fps1440: fps.fps1440,
@@ -379,10 +435,31 @@
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  /* The CSS colour an option value names, or '' when it names none.
+   *
+   * KC names colours the way anyone would — White, Black, Matte Black, Silk
+   * Gold — so the whole value is tried, then its last word. "60cm" or "Galaxy"
+   * is not a colour and gets no swatch. Whatever comes back has been accepted
+   * by CSS.supports as a colour, so it is safe inside a style attribute: a
+   * string carrying anything more than a colour cannot pass.
+   */
+  function colourOf(value) {
+    if (!window.CSS || !CSS.supports) return '';
+    var words = String(value == null ? '' : value).toLowerCase().trim().split(/\s+/);
+    var tries = [words.join(''), words[words.length - 1]];
+    for (var i = 0; i < tries.length; i++) {
+      if (tries[i] && CSS.supports('color', tries[i])) return tries[i];
+    }
+    return '';
+  }
+
   function buildCatalogue(nodes) {
     var C = CFG.collections || {};
     var kindOf = function (h) {
-      return h === C.prime ? 'prime' : (h === C.deal ? 'deal' : h);
+      if (h === C.prime) return 'prime';
+      if (h === C.deal) return 'deal';
+      if (h === C.accessory) return 'accessory';
+      return h;
     };
 
     /* The prime grid and the deals row filter on `kind`, and a machine can sit
@@ -392,9 +469,13 @@
      * it, they just do not re-badge it. Without this the sections KC adds
      * could quietly empty the home configurator.
      */
+    // Accessories rank ahead of KC's own collections for the same reason: a
+    // stand he also files under "New this month" is still a stand, and has to
+    // render with the accessory card and the accessory product page.
+    var RANK = { prime: 0, deal: 1, accessory: 2 };
     var rank = function (col) {
-      var k = kindOf(col.handle);
-      return k === 'prime' ? 0 : (k === 'deal' ? 1 : 2);
+      var r = RANK[kindOf(col.handle)];
+      return r === undefined ? 3 : r;
     };
     var ordered = nodes.slice().sort(function (a, b) { return rank(a) - rank(b); });
 
@@ -428,6 +509,8 @@
         // The two the page already has hard-coded blocks for. They are still
         // returned, so anything wanting the full picture can see them, but the
         // generic renderers skip them or the page would show them twice.
+        // Accessories are deliberately NOT reserved: they are an ordinary
+        // section KC places with shop_order, whose cards happen to differ.
         reserved: kind === 'prime' || kind === 'deal',
         kind: kind,
         products: ladder(members)
@@ -484,8 +567,8 @@
    * exist in Shopify, and inventing them from products.js would put headings
    * on the page for categories the store does not have.
    *
-   * Memoised, because the shop page asks for products and sections and there
-   * is no reason to buy the same 526-point query twice.
+   * Memoised, because a page may ask for products and sections separately and
+   * there is no reason to make the same round trip twice.
    */
   var cataloguePromise = null;
 
@@ -538,9 +621,9 @@
   var Q = {
     get: 'query Cart($id: ID!) { cart(id: $id) { ' + CART_FIELDS + ' } }',
     create: 'mutation CartCreate($lines: [CartLineInput!]) { cartCreate(input: { lines: $lines }) { cart { ' +
-      CART_FIELDS + ' } userErrors { message } } }',
+      CART_FIELDS + ' } userErrors { message field } warnings { code message } } }',
     add: 'mutation CartAdd($id: ID!, $lines: [CartLineInput!]!) { cartLinesAdd(cartId: $id, lines: $lines) { cart { ' +
-      CART_FIELDS + ' } userErrors { message } } }',
+      CART_FIELDS + ' } userErrors { message field } warnings { code message } } }',
     update: 'mutation CartUpdate($id: ID!, $lines: [CartLineUpdateInput!]!) { cartLinesUpdate(cartId: $id, lines: $lines) { cart { ' +
       CART_FIELDS + ' } userErrors { message } } }',
     remove: 'mutation CartRemove($id: ID!, $lineIds: [ID!]!) { cartLinesRemove(cartId: $id, lineIds: $lineIds) { cart { ' +
@@ -580,17 +663,34 @@
     };
   }
 
-  // Unwrap a mutation payload, surfacing Shopify's userErrors as real errors.
+  /* Unwrap a mutation payload, surfacing Shopify's userErrors as real errors.
+   *
+   * The error remembers whether it was about the cart itself, because that is
+   * the one failure a fresh cart can fix. Shopify reports a cart that has
+   * expired or been checked out as a userError on the `cartId` field.
+   *
+   * Warnings are not errors and do not throw. They are how Shopify says it
+   * did something other than what was asked — most importantly, "Only 1 item
+   * was added to your cart due to availability" when a one-off is requested
+   * twice. The cart has still changed, so state is updated and the warnings
+   * are handed back for the page to show.
+   */
   function unwrap(key) {
     return function (data) {
       var payload = data[key];
       if (payload.userErrors && payload.userErrors.length) {
-        throw new Error(payload.userErrors[0].message);
+        var e = payload.userErrors[0];
+        var err = new Error(e.message);
+        err.staleCart = (e.field || []).indexOf('cartId') !== -1;
+        throw err;
       }
       state = normaliseCart(payload.cart);
       if (state) localStorage.setItem(CART_KEY, state.id);
       emit();
-      return state;
+      return {
+        cart: state,
+        warnings: (payload.warnings || []).map(function (w) { return w.message; })
+      };
     };
   }
 
@@ -619,22 +719,38 @@
       });
   }
 
-  function add(variantId, quantity) {
+  /* Add several lines in one request — a build and the add-ons picked with it.
+   *
+   * One request rather than one per line, so the drawer never opens on a
+   * half-added order, and a slow connection is one wait instead of three.
+   * Shopify adds each line independently: a colour that is out of stock comes
+   * back as a warning while the build still goes in. Resolves to
+   * { cart, warnings }.
+   *
+   * Only a cart that no longer exists is replaced. This used to start a fresh
+   * cart on ANY failure, which meant a dropped connection or a rejected line
+   * silently threw away everything the customer had already added.
+   */
+  function addLines(lines) {
     if (!configured) return Promise.reject(new Error('Shopify not configured'));
-    if (!variantId) return Promise.reject(new Error('This product has no variant ID'));
+    lines = (lines || []).filter(function (l) { return l && l.merchandiseId; })
+      .map(function (l) { return { merchandiseId: l.merchandiseId, quantity: l.quantity || 1 }; });
+    if (!lines.length) return Promise.reject(new Error('Nothing to add — this product has no variant ID'));
 
-    var lines = [{ merchandiseId: variantId, quantity: quantity || 1 }];
     var id = state && state.id;
-
     if (!id) return query(Q.create, { lines: lines }).then(unwrap('cartCreate'));
 
     return query(Q.add, { id: id, lines: lines })
       .then(unwrap('cartLinesAdd'))
       .catch(function (err) {
-        // Stale cart ID — start a fresh one rather than failing the click.
+        if (!err.staleCart) throw err;
         forget();
         return query(Q.create, { lines: lines }).then(unwrap('cartCreate'));
       });
+  }
+
+  function add(variantId, quantity) {
+    return addLines([{ merchandiseId: variantId, quantity: quantity }]);
   }
 
   function setQuantity(lineId, quantity) {
@@ -664,6 +780,7 @@
     shopSections: shopSections,
     homeSections: homeSections,
     esc: esc,
+    colourOf: colourOf,
     accountUrl: function () {
       if (CFG.accountUrl) return CFG.accountUrl;
       return configured ? 'https://' + CFG.domain + '/account' : null;
@@ -677,6 +794,7 @@
     onChange: function (fn) { listeners.push(fn); fn(state); },
     hydrate: hydrate,
     add: add,
+    addLines: addLines,
     setQuantity: setQuantity,
     remove: remove,
     checkout: checkout
