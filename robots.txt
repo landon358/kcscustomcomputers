@@ -4,4 +4,8 @@ Allow: /
 # The order confirmation has nothing to index and should never be a result.
 Disallow: /thanks
 
+# The raw Shopify policy pages the Privacy and Terms pages are built from.
+# The pages themselves are indexable; their unstyled source should not be.
+Disallow: /policy-src/
+
 Sitemap: https://kcscustomcomputers.netlify.app/sitemap.xml

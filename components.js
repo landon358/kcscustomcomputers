@@ -62,22 +62,22 @@ window.CATEGORIES = [
     id: 'ram', label: 'Memory', short: 'RAM',
     blurb: '32GB is the sweet spot for gaming today. More only helps heavy creative work.',
     options: [
-      { id: 'ram16',  name: '16GB',  note: '2 × 8GB DDR5-6000',        img: P + 'ram-16gb.webp' },
-      { id: 'ram32',  name: '32GB',  note: '2 × 16GB DDR5-6000', img: P + 'ram-32gb.webp' },
-      { id: 'ram64',  name: '64GB',  note: '2 × 32GB DDR5-6000',img: P + 'ram-64gb.webp' },
-      { id: 'ram128', name: '128GB', note: '4 × 32GB DDR5-5600',   img: P + 'ram-128gb.webp' },
-      { id: 'ram256', name: '256GB', note: '4 × 64GB DDR5-5600',    img: P + 'ram-256gb.webp' }
+      { id: 'ram16',  name: '16GB',  note: '2 × 8GB',        img: P + 'ram-16gb.webp' },
+      { id: 'ram32',  name: '32GB',  note: '2 × 16GB', img: P + 'ram-32gb.webp' },
+      { id: 'ram64',  name: '64GB',  note: '2 × 32GB',img: P + 'ram-64gb.webp' },
+      { id: 'ram128', name: '128GB', note: '4 × 32GB',   img: P + 'ram-128gb.webp' },
+      { id: 'ram256', name: '256GB', note: '4 × 64GB',    img: P + 'ram-256gb.webp' }
     ]
   },
   {
     id: 'storage', label: 'Storage', short: 'Storage',
     blurb: 'All NVMe, no spinning disks. Modern games run 80–150GB each.',
     options: [
-      { id: 'ssd500', name: '500GB NVMe SSD', note: 'PCIe 4.0 · up to 7,250 MB/s', img: P + 'ssd-500gb-nvme.png' },
-      { id: 'ssd1',   name: '1TB NVMe SSD',   note: 'PCIe 4.0 · up to 7,300 MB/s',      img: P + 'ssd-1tb-nvme.png' },
-      { id: 'ssd2',   name: '2TB NVMe SSD',   note: 'PCIe 4.0 · up to 7,300 MB/s',img: P + 'ssd-2tb-nvme.png' },
-      { id: 'ssd4',   name: '4TB NVMe SSD',   note: 'PCIe 4.0 · up to 7,200 MB/s', img: P + 'ssd-4tb-nvme.png' },
-      { id: 'ssd8',   name: '8TB NVMe SSD',   note: 'PCIe 4.0 · up to 7,200 MB/s',      img: P + 'ssd-8tb-nvme.png' }
+      { id: 'ssd500', name: '500GB NVMe SSD', note: '', img: P + 'ssd-500gb-nvme.png' },
+      { id: 'ssd1',   name: '1TB NVMe SSD',   note: '', img: P + 'ssd-1tb-nvme.png' },
+      { id: 'ssd2',   name: '2TB NVMe SSD',   note: '', img: P + 'ssd-2tb-nvme.png' },
+      { id: 'ssd4',   name: '4TB NVMe SSD',   note: '', img: P + 'ssd-4tb-nvme.png' },
+      { id: 'ssd8',   name: '8TB NVMe SSD',   note: '', img: P + 'ssd-8tb-nvme.png' }
     ]
   },
   {

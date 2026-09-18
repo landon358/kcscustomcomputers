@@ -56,6 +56,17 @@ window.SHOPIFY_CONFIG = {
    */
   hiddenCollections: ['frontpage'],
 
+  /* Collections shown on the HOME page as a configurator — the chips, photo,
+   * parts, benchmarks and price block — instead of a row of cards. Each one
+   * sits directly under AMD Prime's, in this order. AMD Prime (`prime`
+   * above) always has one and is not listed here.
+   *
+   * A collection listed here is not ALSO shown as a card row on the home
+   * page, whatever its home_order says. On the shop page it is an ordinary
+   * section as before. An empty or unpublished one shows nothing.
+   */
+  homeConfigurators: ['intel-prime-series'],
+
   /* How many of KC's own collections the home page will show at once. The
    * home page is a shop window, not the shop: past three extra rows the
    * pre-built configurator and the deals row stop being what people see. If

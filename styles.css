@@ -507,6 +507,12 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
 .chip.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
 
 .config__price { font: 700 32px var(--display); letter-spacing: -0.02em; }
+/* Price on the left, the button pushed right. The price box takes the room the
+   button leaves and wraps its sub-line inside it; its flex-basis is 0 so the
+   row only breaks onto two lines when the price itself cannot fit beside the
+   button, not whenever the sub-line would like to be wide. */
+.config__buyrow { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
+.config__pricebox { flex: 1 1 0; min-width: 0; }
 
 /* ---------------------------------------------------------- spec rows --- */
 
@@ -1020,6 +1026,54 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   color: var(--ink-4);
 }
 
+/* Privacy Policy and Terms links, between the copyright and the payment
+   methods. Quieter than the column links: legal pages are looked for, not
+   browsed to. */
+.footer__policies { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.footer__policies a { color: var(--ink-3); }
+.footer__policies a:hover { color: var(--blue); }
+
+/* ------------------------------------------------------------ policies --- */
+
+/* KC's policies, as Shopify publishes them. The markup is Shopify's — h2s,
+   paragraphs, lists, a few links — with its classes stripped, so it is styled
+   here by element. A reading measure, not the full page width: these are
+   long and mostly read top to bottom. */
+.policy { max-width: 720px; font: 400 16px/1.7 var(--ui); color: var(--ink-2); }
+.policy h2 {
+  margin: 42px 0 12px;
+  font: 700 clamp(20px, 2.1vw, 25px)/1.25 var(--display);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.policy p { margin: 0 0 14px; }
+.policy ul, .policy ol { margin: 0 0 18px; padding-left: 22px; }
+.policy li { margin-bottom: 8px; }
+.policy li::marker { color: var(--ink-4); }
+.policy strong, .policy b { font-weight: 600; color: var(--ink); }
+.policy a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+/* Shopify opens every policy with "Last updated: …" */
+.policy > div > p:first-child {
+  margin-bottom: 26px;
+  font: 600 12px var(--ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+/* Loading, not published yet, or could not be fetched. */
+.policy__status {
+  max-width: 620px;
+  margin: 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font: 500 15px/1.6 var(--ui);
+  color: var(--ink-2);
+}
+.policy__status a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
+
 /* ------------------------------------------------------------- mobile --- */
 
 @media (max-width: 1080px) {
@@ -1078,7 +1132,12 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
     margin: 18px 16px 0;
   }
 
-  .config { grid-template-columns: 1fr; }
+  /* minmax(0, …), not 1fr: a bare 1fr column will not shrink below its
+     widest unbreakable content, which here is the price beside a nowrap
+     button. That row needs ~316px on a phone where the panel has 291, so the
+     column grew past the tile, the tile's overflow:hidden cut it, and the
+     spec values and the button lost their right edge — 4px of it at $2,500. */
+  .config { grid-template-columns: minmax(0, 1fr); }
   .config__panel { border-left: none; border-top: 1px solid var(--line-3); padding: 24px 22px; }
 
   .grid--3, .grid--4, .product, .related { grid-template-columns: 1fr; }
@@ -1123,6 +1182,12 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   .addon__body  { grid-area: body; }
   .addon__price { grid-area: price; font-size: 13px; }
   .optval--sm   { padding: 8px 12px 8px 9px; }
+  /* Room for the price beside the button on a 360px phone: a tighter gap, a
+     slightly smaller price and less side padding on the button. On anything
+     narrower the button drops below instead of being cut off. */
+  .config__buyrow { gap: 12px; }
+  .config__price { font-size: 28px; white-space: nowrap; }
+  .config__buyrow [data-cfg="buy"] { padding: 0 18px; flex: none; }
   .nav__logo { font-size: 14px; }
   .nav__actions .btn { padding: 0 11px; font-size: 12px; }
   .related { grid-template-columns: 1fr; }

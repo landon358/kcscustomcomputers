@@ -13,6 +13,15 @@
 # so a rule here would silently swallow every enquiry. Pretty URLs already
 # serves /thanks; this path needs no rule and must not have one.
 
+# The Privacy Policy and Terms pages show KC's policies exactly as Shopify
+# publishes them at checkout (see policy.js for why). A browser cannot fetch
+# those from this site — Shopify sends no CORS header — so Netlify fetches
+# them on the server instead: a 200 here is a proxy, not a redirect.
+# Deliberately narrow. It covers only the policies of KC's own store (shop
+# 69199953974), so this site cannot be used to serve any other page from
+# checkout.shopify.com under its own address.
+/policy-src/69199953974/policies/*   https://checkout.shopify.com/69199953974/policies/:splat   200
+
 # TODO: KC's previous site. Add one line per old URL that has inbound links or
 # rankings, mapping it to its closest page here, e.g.
 #   /pages/about        /contact       301

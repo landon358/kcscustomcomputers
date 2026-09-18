@@ -333,55 +333,129 @@
 
   /* ----------------------------------------------------- configurator ---- */
 
-  var selected = 'prime-m';
-
   // The panel is narrow, so it uses the short forms of two spec labels. The
   // catalogue keeps the long ones, which is what the shop and product pages
   // want.
   var CFG_LABEL = { Memory: 'RAM', Power: 'PSU' };
 
-  function renderConfig() {
-    var primes = window.PRODUCTS.filter(function (p) { return p.kind === 'prime'; });
-    var p = primes.filter(function (x) { return x.id === selected; })[0] || primes[2];
+  var SITE = window.SHOPIFY_CONFIG || {};
+  var PRIME_HANDLE = (SITE.collections || {}).prime || 'pre-builts';
 
-    $('cfg-chips').innerHTML = primes.map(function (x) {
-      return '<button class="chip' + (x.id === selected ? ' is-active' : '') + '" data-id="' + x.id + '">' + x.name + '</button>';
-    }).join('');
+  /* One configurator, mounted on a section.
+   *
+   * This used to be a single block wired to fixed ids, which is why there
+   * could only ever be one. Everything is found inside `root` by data-cfg and
+   * the chosen machine lives in this closure, so AMD Prime and Intel Prime
+   * each get their own and picking a chip in one leaves the other alone.
+   */
+  function configurator(root) {
+    var el = function (name) { return root.querySelector('[data-cfg="' + name + '"]'); };
+    var list = [];
+    var section = null;
+    var selected = null;
 
-    // Pick rows by name, not by position. Taking the first N meant that adding
-    // a spec field anywhere above them silently changed the home page. Every
-    // hardware component is listed, in the product page's order; the OS is
-    // left to the line under the price, which already says it.
-    var want = ['CPU', 'Motherboard', 'Cooler', 'GPU', 'Memory', 'Storage', 'Power', 'Case'];
-    var byLabel = {};
-    p.specs.forEach(function (s) { byLabel[s[0]] = s[1]; });
-    var picked = want.filter(function (l) { return byLabel[l]; })
-                     .map(function (l) { return [l, byLabel[l]]; });
-    // an unfamiliar catalogue still fills the panel rather than emptying it
-    if (!picked.length) picked = p.specs.slice(0, 8);
+    root.addEventListener('click', function (ev) {
+      var chip = ev.target.closest('.chip');
+      if (!chip || !root.contains(chip)) return;
+      selected = chip.getAttribute('data-id');
+      render();
+    });
 
-    $('cfg-specs').innerHTML = picked.map(function (s) {
-      return '<dl class="spec"><dt>' + (CFG_LABEL[s[0]] || s[0]) + '</dt><dd>' + s[1] + '</dd></dl>';
-    }).join('');
+    function render() {
+      if (!list.length) return;
+      // Opens on the middle of the range — the Prime M of five, as it always
+      // did — and on the only machine when there is one.
+      var p = list.filter(function (x) { return x.id === selected; })[0] ||
+              list[Math.floor((list.length - 1) / 2)];
+      selected = p.id;
 
-    // two games here; the full set is on the product page. Rows carry KC's own
-    // wording ("~240+FPS"), so the label is printed rather than rebuilt.
-    var top = p.fps.slice(0, 2);
-    var top_max = top.reduce(function (a, r) { return Math.max(a, r.value || 0); }, 1);
-    $('cfg-bench').innerHTML = top.map(function (f, i) {
-      var w = typeof f.value === 'number' ? Math.round(f.value / top_max * 210) : 210;
-      return '<div class="bench"><span class="bench__game">' + f.label + '</span>' +
-        '<span class="bench__bar' + (i === 1 ? ' bench__bar--2' : '') +
-        '" style="flex:0 1 ' + w + 'px"></span>' +
-        '<span class="bench__fps">' + f.text + '</span></div>';
-    }).join('');
+      // The collection's own name and eyebrow once Shopify has answered, so
+      // renaming "AMD Prime" in Admin renames it here too.
+      if (section) {
+        el('title').textContent = section.title;
+        el('label').textContent = section.title.toUpperCase();
+        el('eyebrow').textContent = section.eyebrow || '';
+        el('eyebrow').hidden = !section.eyebrow;
+        el('all').href = 'shop.html#collection-' + encodeURIComponent(section.handle);
+      }
 
-    $('cfg-img').src = p.images[0];
-    $('cfg-img').alt = p.name + ' build';
-    $('cfg-tag').textContent = p.name + ' — AS BUILT';
-    $('cfg-price').textContent = window.money(p.price);
-    $('cfg-sub').innerHTML = p.name + ' &middot; Win 11 Pro included';
-    $('cfg-buy').href = 'product.html?id=' + p.id;
+      el('chips').innerHTML = list.map(function (x) {
+        return '<button class="chip' + (x.id === p.id ? ' is-active' : '') + '" data-id="' + x.id + '">' + x.name + '</button>';
+      }).join('');
+
+      // Pick rows by name, not by position. Taking the first N meant that adding
+      // a spec field anywhere above them silently changed the home page. Every
+      // hardware component is listed, in the product page's order; the OS is
+      // left to the line under the price, which already says it.
+      var want = ['CPU', 'Motherboard', 'Cooler', 'GPU', 'Memory', 'Storage', 'Power', 'Case'];
+      var byLabel = {};
+      p.specs.forEach(function (sp) { byLabel[sp[0]] = sp[1]; });
+      var picked = want.filter(function (l) { return byLabel[l]; })
+                       .map(function (l) { return [l, byLabel[l]]; });
+      // an unfamiliar catalogue still fills the panel rather than emptying it
+      if (!picked.length) picked = p.specs.slice(0, 8);
+
+      el('specs').innerHTML = picked.map(function (sp) {
+        return '<dl class="spec"><dt>' + (CFG_LABEL[sp[0]] || sp[0]) + '</dt><dd>' + sp[1] + '</dd></dl>';
+      }).join('');
+
+      // two games here; the full set is on the product page. Rows carry KC's own
+      // wording ("~240+FPS"), so the label is printed rather than rebuilt.
+      var top = (p.fps || []).slice(0, 2);
+      var topMax = top.reduce(function (a, r) { return Math.max(a, r.value || 0); }, 1);
+      el('bench').innerHTML = top.map(function (f, i) {
+        var w = typeof f.value === 'number' ? Math.round(f.value / topMax * 210) : 210;
+        return '<div class="bench"><span class="bench__game">' + f.label + '</span>' +
+          '<span class="bench__bar' + (i === 1 ? ' bench__bar--2' : '') +
+          '" style="flex:0 1 ' + w + 'px"></span>' +
+          '<span class="bench__fps">' + f.text + '</span></div>';
+      }).join('');
+      // no heading over an empty space when a machine has no numbers yet
+      el('bench-wrap').hidden = !top.length;
+
+      if (p.images[0]) el('img').src = p.images[0];
+      el('img').alt = p.name + ' build';
+      el('tag').textContent = p.name + ' — AS BUILT';
+      el('price').textContent = window.money(p.price);
+      el('sub').innerHTML = p.name + ' &middot; Win 11 Pro included';
+      el('buy').href = 'product.html?id=' + p.id;
+    }
+
+    return {
+      update: function (products, sec) {
+        list = products || [];
+        section = sec || null;
+        render();
+      }
+    };
+  }
+
+  // Taken before anything renders, so every copy starts from the untouched
+  // markup rather than from whatever AMD Prime happens to be showing.
+  var configTemplate = $('prebuilts').cloneNode(true);
+  var primeConfig = configurator($('prebuilts'));
+  var extraConfigs = [];
+
+  /* A configurator for each collection in homeConfigurators, directly under
+   * AMD Prime's, in the order listed. Built from Shopify data only: there is
+   * no static fallback for them, so with Shopify unreachable they simply do
+   * not appear, rather than showing an empty panel. */
+  function renderExtraConfigurators(sections) {
+    extraConfigs.forEach(function (node) { node.parentNode.removeChild(node); });
+    extraConfigs = [];
+
+    var after = $('prebuilts');
+    (SITE.homeConfigurators || []).forEach(function (handle) {
+      var sec = (sections || []).filter(function (s) { return s.handle === handle; })[0];
+      if (!sec || !sec.products.length) return;
+
+      var node = configTemplate.cloneNode(true);
+      node.id = 'home-' + handle;
+      after.parentNode.insertBefore(node, after.nextSibling);
+      after = node;
+      extraConfigs.push(node);
+      configurator(node).update(sec.products, sec);
+    });
   }
 
   /* The compact card every home row uses. `pill` is the small blue badge the
@@ -451,16 +525,9 @@
     }).join('');
   }
 
-  document.addEventListener('click', function (ev) {
-    var chip = ev.target.closest('.chip');
-    if (!chip) return;
-    selected = chip.getAttribute('data-id');
-    renderConfig();
-  });
-
   /* -------------------------------------------------------------- go ---- */
 
-  renderConfig();
+  primeConfig.update(window.PRODUCTS.filter(function (p) { return p.kind === 'prime'; }));
   renderDeals();
   renderCollections([]);
   readScroll();
@@ -473,8 +540,15 @@
   // catalogue has no collections, so the first pass above renders none.
   window.Shopify.loadCatalogue().then(function (cat) {
     window.PRODUCTS = cat.products;
-    renderConfig();
+    var primeSection = cat.sections.filter(function (s) { return s.handle === PRIME_HANDLE; })[0];
+    primeConfig.update(
+      primeSection ? primeSection.products
+                   : cat.products.filter(function (p) { return p.kind === 'prime'; }),
+      primeSection);
+    renderExtraConfigurators(cat.sections);
     renderDeals();
-    renderCollections(cat.sections);
+    // A collection with its own configurator is not repeated as a card row.
+    var asConfig = SITE.homeConfigurators || [];
+    renderCollections(cat.sections.filter(function (s) { return asConfig.indexOf(s.handle) === -1; }));
   });
 })();

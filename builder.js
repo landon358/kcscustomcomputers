@@ -86,7 +86,8 @@
           '<span class="opt__shot"><img src="' + o.img + '" alt="' + o.name + '" loading="lazy">' +
           '<span class="opt__tick">✓</span></span>' +
           '<span class="opt__name">' + o.name + '</span>' +
-          '<span class="opt__note">' + o.note + '</span>' +
+          // storage options carry no sub-line, and an empty one still takes its margin
+          (o.note ? '<span class="opt__note">' + o.note + '</span>' : '') +
         '</button>';
       }).join('');
     }
@@ -212,7 +213,7 @@
     if (!action) {
       // Nowhere to send it. Say so rather than showing a success panel.
       $('#send-error').textContent =
-        'The quote form is not connected yet. Email KC directly and he will pick it up.';
+        'The quote form is not connected yet. Please email KC directly instead.';
       $('#send-error').hidden = false;
       return;
     }
