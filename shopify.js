@@ -560,6 +560,26 @@
     return picked.slice(0, cap);
   }
 
+  /* Order page blocks by KC's numbers — shop_order on the shop page,
+   * home_order on the home page. Each block is { el, order }.
+   *
+   * Numbered first, lowest first. Anything without a number follows, in the
+   * order the page already had it — so a section KC has not numbered lands at
+   * the end instead of jumping the queue. Ties keep that order too, which means
+   * two collections both set to 1 never swap places between visits.
+   */
+  function byOrder(blocks) {
+    return (blocks || []).map(function (b, i) { return { b: b, i: i }; })
+      .sort(function (x, y) {
+        var a = x.b.order, c = y.b.order;
+        var an = typeof a === 'number', cn = typeof c === 'number';
+        if (an && cn && a !== c) return a - c;
+        if (an !== cn) return an ? -1 : 1;
+        return x.i - y.i;
+      })
+      .map(function (x) { return x.b; });
+  }
+
   /* Resolves to { products, sections } either way: Shopify when configured and
    * reachable, the static catalogue otherwise. Never rejects.
    *
@@ -779,6 +799,7 @@
     loadCatalogue: loadCatalogue,
     shopSections: shopSections,
     homeSections: homeSections,
+    byOrder: byOrder,
     esc: esc,
     colourOf: colourOf,
     accountUrl: function () {

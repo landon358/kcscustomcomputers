@@ -443,6 +443,7 @@
   function renderExtraConfigurators(sections) {
     extraConfigs.forEach(function (node) { node.parentNode.removeChild(node); });
     extraConfigs = [];
+    var blocks = [];
 
     var after = $('prebuilts');
     (SITE.homeConfigurators || []).forEach(function (handle) {
@@ -455,7 +456,9 @@
       after = node;
       extraConfigs.push(node);
       configurator(node).update(sec.products, sec);
+      blocks.push({ el: node, order: sec.homeOrder });
     });
+    return blocks;
   }
 
   /* The compact card every home row uses. `pill` is the small blue badge the
@@ -500,13 +503,19 @@
    * carries the rest to the shop page, where the section is listed in full.
    */
   function renderCollections(sections) {
-    var host = $('home-collections');
-    if (!host) return;
+    var flow = $('home-flow');
     var esc = window.Shopify.esc;
 
-    host.innerHTML = window.Shopify.homeSections(sections).map(function (s) {
+    // Last pass's rows go; this pass's are built fresh. Each is its own
+    // section in the flow, so it can sort between the fixed blocks.
+    Array.prototype.slice.call(flow.querySelectorAll('.home-collection'))
+      .forEach(function (el) { el.parentNode.removeChild(el); });
+
+    var rows = window.Shopify.homeSections(sections);
+    var holder = document.createElement('div');
+    holder.innerHTML = rows.map(function (s) {
       var shown = s.products.slice(0, 4);
-      return '<section class="section section--tight" id="home-' + esc(s.handle) + '">' +
+      return '<section class="section section--tight home-collection" id="home-' + esc(s.handle) + '">' +
         '<div class="section__head">' +
           (s.eyebrow ? '<span class="eyebrow">' + esc(s.eyebrow) + '</span>' : '') +
           '<h2>' + esc(s.title) + '</h2>' +
@@ -523,6 +532,23 @@
         '</div>' +
       '</section>';
     }).join('');
+
+    var nodes = Array.prototype.slice.call(holder.children);
+    nodes.forEach(function (el) { flow.insertBefore(el, $('build-your-own')); });
+    return rows.map(function (s, i) { return { el: nodes[i], order: s.homeOrder }; });
+  }
+
+  /* Put every home section in KC's home_order (see Shopify.byOrder).
+   *
+   * AMD Prime, the Intel configurator and One Time Deals used to hold fixed
+   * spots whatever their collections were numbered, so the numbers only sorted
+   * the card rows against each other — which put Budget (2) below One Time
+   * Deals (4). They all sort together now. "Spec your own machine" is not a
+   * collection, so its number comes from customBuildHomeOrder instead.
+   */
+  function arrangeHome(blocks) {
+    var flow = $('home-flow');
+    window.Shopify.byOrder(blocks).forEach(function (b) { flow.appendChild(b.el); });
   }
 
   /* -------------------------------------------------------------- go ---- */
@@ -545,10 +571,20 @@
       primeSection ? primeSection.products
                    : cat.products.filter(function (p) { return p.kind === 'prime'; }),
       primeSection);
-    renderExtraConfigurators(cat.sections);
+    var configs = renderExtraConfigurators(cat.sections);
     renderDeals();
     // A collection with its own configurator is not repeated as a card row.
     var asConfig = SITE.homeConfigurators || [];
-    renderCollections(cat.sections.filter(function (s) { return asConfig.indexOf(s.handle) === -1; }));
+    var rows = renderCollections(cat.sections.filter(function (s) { return asConfig.indexOf(s.handle) === -1; }));
+
+    var dealSection = cat.sections.filter(function (s) { return s.kind === 'deal'; })[0];
+    var custom = typeof SITE.customBuildHomeOrder === 'number' ? SITE.customBuildHomeOrder : null;
+    // Listed in the page's natural order, which is what unnumbered sections
+    // and ties fall back to.
+    arrangeHome([{ el: $('prebuilts'), order: primeSection ? primeSection.homeOrder : null }]
+      .concat(configs)
+      .concat([{ el: $('deals'), order: dealSection ? dealSection.homeOrder : null }])
+      .concat(rows)
+      .concat([{ el: $('build-your-own'), order: custom }]));
   });
 })();

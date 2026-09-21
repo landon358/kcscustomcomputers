@@ -67,6 +67,14 @@ window.SHOPIFY_CONFIG = {
    */
   homeConfigurators: ['intel-prime-series'],
 
+  /* Where "Spec your own machine" sits on the home page. Every other home
+   * section takes its place from its collection's home_order in Shopify; this
+   * block is not a collection, so its number lives here instead. null keeps it
+   * last. A decimal slots it between two numbers: 2.5 puts it between the
+   * collections numbered 2 and 3.
+   */
+  customBuildHomeOrder: null,
+
   /* How many of KC's own collections the home page will show at once. The
    * home page is a shop window, not the shop: past three extra rows the
    * pre-built configurator and the deals row stop being what people see. If
@@ -151,13 +159,16 @@ window.SHOPIFY_CONFIG = {
    * 3. To put it on the HOME page as well, give the collection a metafield —
    *    Settings -> Custom data -> Collections:
    *
-   *      home_order   (integer)  its position on the home page. 1 sits
-   *                              directly under the one-time deals, 2 under
-   *                              that, and so on. LEAVE IT EMPTY and the
-   *                              collection stays on the shop page only —
-   *                              which is the default on purpose, so a
-   *                              half-finished category cannot appear on the
-   *                              front page by accident.
+   *      home_order   (integer)  its position on the home page, counted
+   *                              across EVERY section there, AMD Prime and
+   *                              One Time Deals included: 1 comes first, then
+   *                              2, and so on. LEAVE IT EMPTY on a new
+   *                              collection and it stays on the shop page only
+   *                              — the default on purpose, so a half-finished
+   *                              category cannot reach the front page by
+   *                              accident. AMD Prime, One Time Deals and the
+   *                              homeConfigurators always show; without a
+   *                              number they go after the numbered ones.
    *      shop_order   (integer)  its position on the shop page. This one
    *                              works on EVERY section there, AMD Prime and
    *                              One Time Deals included, so the whole page
@@ -165,8 +176,7 @@ window.SHOPIFY_CONFIG = {
    *                              after the numbered ones. Two collections
    *                              given the same number sit in alphabetical
    *                              order. "Nothing here quite fits?" is always
-   *                              last. (On the HOME page, AMD Prime and One
-   *                              Time Deals still have fixed spots.)
+   *                              last.
    *      eyebrow      (text)     the small line above the heading, e.g.
    *                              "New this month". Optional.
    *

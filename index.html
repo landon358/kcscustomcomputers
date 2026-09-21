@@ -184,6 +184,12 @@
   <p>We deliver quality computers, built to last.</p>
 </section>
 
+<!-- Everything from here to the custom-build block, in the order KC's
+     home_order numbers ask for. home.js sorts these and adds a card row per
+     featured collection, so nothing below is in its final position until the
+     Shopify data lands. -->
+<div id="home-flow">
+
 <!-- The configurator: chips across a collection, with the chosen machine's
      photo, parts, benchmarks and price. This block is AMD Prime's, and home.js
      stamps out a copy directly below it for each collection listed in
@@ -230,10 +236,6 @@
   <div class="grid grid--4" id="deal-grid"></div>
 </section>
 
-<!-- Collections KC has given a home_order, in that order. Empty until one has
-     one, so the home page keeps its current shape until he asks otherwise. -->
-<div id="home-collections"></div>
-
 <section class="section" id="build-your-own">
   <div class="custom">
     <span class="eyebrow">Build custom</span>
@@ -251,6 +253,8 @@
     </div>
   </div>
 </section>
+
+</div>
 
 </main>
 

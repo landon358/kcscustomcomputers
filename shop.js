@@ -124,30 +124,17 @@
       '</section>';
   }
 
-  /* Put every section in KC's shop_order.
+  /* Put every section in KC's shop_order (see Shopify.byOrder).
    *
    * The pre-built grid and the deals row are fixed blocks in the page, and used
    * to stay first and second whatever numbers their collections carried. They
    * now sort alongside the collections he adds, so one number per collection
    * in Admin decides the whole page.
-   *
-   * Numbered sections first, lowest first. Anything without a number follows,
-   * in the order it was already in — so a collection KC has not numbered yet
-   * lands at the end instead of jumping the queue. Ties keep that order too,
-   * which means two collections both set to 2 never swap between visits.
    */
   function arrange(blocks) {
     var flow = document.getElementById('shop-flow');
 
-    var ordered = blocks.map(function (b, i) { return { b: b, i: i }; })
-      .sort(function (x, y) {
-        var a = x.b.order, c = y.b.order;
-        var an = typeof a === 'number', cn = typeof c === 'number';
-        if (an && cn && a !== c) return a - c;
-        if (an !== cn) return an ? -1 : 1;
-        return x.i - y.i;
-      })
-      .map(function (x) { return x.b.el; });
+    var ordered = window.Shopify.byOrder(blocks).map(function (b) { return b.el; });
 
     // appendChild moves a node that is already in the page, so this reorders
     // the two fixed sections rather than copying them
