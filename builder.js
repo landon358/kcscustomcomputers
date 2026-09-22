@@ -164,81 +164,89 @@
     });
   });
 
-  /* Where a quote goes.
+  /* Where a quote goes: Netlify Forms, the same as the Contact page.
    *
-   * KC already takes enquiries through the Shopify contact form on
-   * shop.kcscustomcomputers.com/pages/contact, which land in KC's inbox. This
-   * posts the same fields to the same endpoint, so a build request arrives
-   * exactly like every other message and nothing about his process changes.
+   * It used to post to Shopify's contact form, so the request reached KC's
+   * inbox the way Shopify enquiries always had. But a form submitted to
+   * Shopify takes the visitor with it: once Shopify moved to
+   * shop.kcscustomcomputers.com, every quote ended on the old Shopify theme,
+   * and Shopify will not send anyone back to another site afterwards.
    *
-   * It has to be a real form submission, not fetch: Shopify does not send CORS
-   * headers on /contact, so an XHR from this origin would be blocked. That
-   * means the browser lands on his contact page, which shows Shopify's own
-   * confirmation — worth it for a request that provably arrived rather than
-   * one we hope did.
+   * Sent in the background instead, so the visitor never leaves the popup and
+   * sees the "Request sent" panel. Netlify emails each submission to whoever
+   * is set up under Forms → Form notifications in the Netlify dashboard.
    */
-  function contactAction() {
-    var cfg = window.SHOPIFY_CONFIG || {};
-    if (cfg.contactUrl) return cfg.contactUrl;
-    if (cfg.storeUrl) return cfg.storeUrl.replace(/\/$/, '') + '/contact#ContactForm';
-    if (cfg.domain) return 'https://' + cfg.domain + '/contact#ContactForm';
-    return null;
+  function buildList() {
+    return cats.map(function (c) {
+      return c.label + ': ' + (chosenName(c) || '—');
+    }).join('\n');
   }
 
-  // One readable block — Shopify emails the comment as plain text.
-  function buildComment() {
-    var lines = ['Custom build request', ''];
-    cats.forEach(function (c) {
-      lines.push(c.label + ': ' + (chosenName(c) || '—'));
-    });
-    var notes = $('#f-notes').value.trim();
-    if (notes) lines.push('', 'Notes: ' + notes);
-    return lines.join('\n');
+  function encode(fields) {
+    return Object.keys(fields).map(function (k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(fields[k]);
+    }).join('&');
   }
 
-  function hiddenInput(form, name, value) {
-    var i = document.createElement('input');
-    i.type = 'hidden';
-    i.name = name;
-    i.value = value;
-    form.appendChild(i);
+  // If Netlify cannot be reached, the request is still one click from KC:
+  // an email with the whole build already written out.
+  function mailtoFallback(fields) {
+    var body = 'Name: ' + fields.name + '\nEmail: ' + fields.email +
+      (fields.phone ? '\nPhone: ' + fields.phone : '') +
+      '\n\n' + fields.build + (fields.notes ? '\n\nNotes: ' + fields.notes : '');
+    return 'mailto:fegelykc@gmail.com?subject=' +
+      encodeURIComponent('Custom build request — ' + fields.name) +
+      '&body=' + encodeURIComponent(body);
+  }
+
+  function resetSend() {
+    var b = $('#send');
+    b.textContent = 'Send my build request';
+    b.disabled = !contactOk();
+    b.className = 'btn btn--lg btn--block' + (contactOk() ? ' btn--primary' : ' btn--disabled');
   }
 
   $('#send').addEventListener('click', function () {
     if (!contactOk()) return;
 
     var btn = $('#send');
-    var action = contactAction();
-
-    if (!action) {
-      // Nowhere to send it. Say so rather than showing a success panel.
-      $('#send-error').textContent =
-        'The quote form is not connected yet. Please email KC directly instead.';
-      $('#send-error').hidden = false;
-      return;
-    }
+    var fields = {
+      'form-name': 'quote',
+      'bot-field': '',
+      name: $('#f-name').value.trim(),
+      email: $('#f-email').value.trim(),
+      phone: $('#f-phone').value.trim(),
+      build: buildList(),
+      notes: $('#f-notes').value.trim()
+    };
 
     btn.disabled = true;
     btn.className = 'btn btn--lg btn--block btn--disabled';
     btn.textContent = 'Sending…';
     $('#send-error').hidden = true;
 
-    var form = document.createElement('form');
-    form.method = 'post';
-    form.action = action;
-    form.acceptCharset = 'UTF-8';
-    form.style.display = 'none';
-
-    // The field names are Shopify's, and match the contact form on his site.
-    hiddenInput(form, 'form_type', 'contact');
-    hiddenInput(form, 'utf8', '\u2713');
-    hiddenInput(form, 'contact[Name]', $('#f-name').value.trim());
-    hiddenInput(form, 'contact[email]', $('#f-email').value.trim());
-    hiddenInput(form, 'contact[Phone number]', $('#f-phone').value.trim());
-    hiddenInput(form, 'contact[Comment]', buildComment());
-
-    document.body.appendChild(form);
-    form.submit();
+    fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: encode(fields)
+    })
+      .then(function (r) {
+        // Netlify answers a stored submission with the page it was posted
+        // to; anything else means it was not taken.
+        if (!r.ok) throw new Error('form endpoint returned ' + r.status);
+        $('#quote-form').hidden = true;
+        $('#quote-sent').hidden = false;
+        resetSend();
+      })
+      .catch(function (err) {
+        console.warn('[quote]', err.message);
+        var e = $('#send-error');
+        e.innerHTML = 'Your request could not be sent. ' +
+          '<a href="' + mailtoFallback(fields).replace(/"/g, '&quot;') + '">Email it to KC instead</a>' +
+          ' — your parts list is already filled in.';
+        e.hidden = false;
+        resetSend();
+      });
   });
 
   render();

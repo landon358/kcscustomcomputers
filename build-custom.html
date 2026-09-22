@@ -101,6 +101,16 @@
   </div>
 </section>
 
+<!-- Never shown. Netlify Forms only registers a form it finds in the HTML at
+     deploy time, and the real quote is sent from builder.js, so this copy
+     exists to declare the form and its fields. A field builder.js sends that
+     is not listed here is silently dropped by Netlify. -->
+<form name="quote" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input name="name"><input name="email"><input name="phone">
+  <textarea name="build"></textarea><textarea name="notes"></textarea>
+  <input name="bot-field">
+</form>
+
 <div class="modal" id="modal" hidden>
   <div class="modal__card">
 
