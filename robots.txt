@@ -8,4 +8,4 @@ Disallow: /thanks
 # The pages themselves are indexable; their unstyled source should not be.
 Disallow: /policy-src/
 
-Sitemap: https://kcscustomcomputers.netlify.app/sitemap.xml
+Sitemap: https://kcscustomcomputers.com/sitemap.xml

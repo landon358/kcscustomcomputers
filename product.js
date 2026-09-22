@@ -512,7 +512,7 @@
      per machine at runtime. Google renders JavaScript before indexing, so
      this is seen — but the static head still carries a sensible default in
      case a crawler that does not run JS gets here first. */
-  var SEO_BASE = 'https://kcscustomcomputers.netlify.app';
+  var SEO_BASE = 'https://kcscustomcomputers.com';
 
   function setMeta(sel, attr, val) {
     var el = document.head.querySelector(sel);
@@ -672,7 +672,12 @@
 
   window.Shopify.loadProducts().then(function (list) {
     window.PRODUCTS = list;
-    var fresh = list.filter(function (x) { return x.id === handle; })[0];
+    /* By the site's id first, then by Shopify handle. The Primes have ids of
+     * their own (prime-s) that differ from their handles (beginner-build), and
+     * links from KC's old Shopify storefront — /products/beginner-build, now
+     * forwarded here by _redirects — carry the handle. */
+    var fresh = list.filter(function (x) { return x.id === handle; })[0] ||
+                list.filter(function (x) { return x.handle === handle; })[0];
     if (fresh) { p = fresh; shot = 0; resetSelection(); }
     paint();
     main.style.visibility = '';

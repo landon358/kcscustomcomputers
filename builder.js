@@ -167,7 +167,7 @@
   /* Where a quote goes.
    *
    * KC already takes enquiries through the Shopify contact form on
-   * kcscustomcomputers.com/pages/contact, and those land in his inbox. This
+   * shop.kcscustomcomputers.com/pages/contact, which land in KC's inbox. This
    * posts the same fields to the same endpoint, so a build request arrives
    * exactly like every other message and nothing about his process changes.
    *

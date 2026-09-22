@@ -1,5 +1,12 @@
 # Netlify redirects. Format:  /from  /to  [status]
-#
+
+# The site lives at kcscustomcomputers.com. Its netlify.app address used to
+# serve a full second copy, which search engines treat as duplicate content;
+# it forwards now. Forced (!) because every path there exists as a file, and an
+# unforced rule loses to a file that exists. Deploy previews use other
+# netlify.app hostnames and are unaffected.
+https://kcscustomcomputers.netlify.app/*   https://kcscustomcomputers.com/:splat   301!
+
 # Extensionless paths are already handled by Netlify's Pretty URLs, which also
 # rewrote the site's own links. These entries keep the .html forms working for
 # anything already bookmarked or linked, so nothing that ever pointed here 404s.
@@ -22,8 +29,37 @@
 # checkout.shopify.com under its own address.
 /policy-src/69199953974/policies/*   https://checkout.shopify.com/69199953974/policies/:splat   200
 
-# TODO: KC's previous site. Add one line per old URL that has inbound links or
-# rankings, mapping it to its closest page here, e.g.
-#   /pages/about        /contact       301
-#   /collections/all    /shop          301
-# Without these, every old link earns a 404 and its ranking is thrown away.
+# ---- KC's old Shopify storefront ---------------------------------------
+#
+# kcscustomcomputers.com was his Shopify store until it moved here; Shopify
+# now runs on shop.kcscustomcomputers.com. Links to the old store live on in
+# order emails, abandoned-cart emails, search results and bookmarks.
+
+# Anything Shopify still has to handle goes to Shopify: carts, checkouts,
+# customer accounts, and order-status pages (/<shop id>/orders/...).
+# 302, not 301, deliberately: browsers keep a 301 forever, and a remembered
+# redirect is exactly what sent KC's own browser the wrong way during the move.
+/cart                    https://shop.kcscustomcomputers.com/cart                  302
+/cart/*                  https://shop.kcscustomcomputers.com/cart/:splat           302
+/checkout                https://shop.kcscustomcomputers.com/checkout              302
+/checkouts/*             https://shop.kcscustomcomputers.com/checkouts/:splat      302
+/account                 https://shop.kcscustomcomputers.com/account               302
+/account/*               https://shop.kcscustomcomputers.com/account/:splat        302
+/69199953974/*           https://shop.kcscustomcomputers.com/69199953974/:splat    302
+/pages/data-sharing-opt-out   https://shop.kcscustomcomputers.com/pages/data-sharing-opt-out   302
+# Refund and shipping policies are not published yet; if KC adds them they
+# live on Shopify. Privacy and terms have pages here, mapped further down.
+/policies/refund-policy       https://shop.kcscustomcomputers.com/policies/refund-policy       302
+/policies/shipping-policy     https://shop.kcscustomcomputers.com/policies/shipping-policy     302
+
+# Store pages that have an equivalent here: permanent, so rankings carry over.
+# Products keep their Shopify handle; product.js looks a product up by handle
+# as well as by this site's own id.
+/collections/:c/products/:handle   /product?id=:handle   301
+/products/:handle                  /product?id=:handle   301
+/collections/*                     /shop                 301
+/search                            /shop                 301
+/pages/contact                     /contact              301
+/policies/privacy-policy           /privacy              301
+/policies/terms-of-service         /terms                301
+/pages/*                           /                     301

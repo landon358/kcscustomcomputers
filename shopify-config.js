@@ -19,11 +19,15 @@ window.SHOPIFY_CONFIG = {
   // Storefront API version. Shopify supports each for 12 months.
   apiVersion: '2026-01',
 
-  // The public storefront, used for the custom-build quote form. That form
-  // posts to Shopify's own contact endpoint on this domain, so a build request
-  // arrives in the same inbox as every other message from the contact page —
-  // no third-party form service in the middle.
-  storeUrl: 'https://kcscustomcomputers.com',
+  // Shopify's storefront, used by the custom-build quote form. That form posts
+  // to Shopify's own contact endpoint here, so a build request arrives in the
+  // same inbox as every other message — no third-party form service between.
+  //
+  // This is the shop. subdomain, NOT kcscustomcomputers.com: that name now
+  // points at this site, which has no /contact endpoint, so a quote posted
+  // there would go nowhere. shop. is Shopify's primary domain, and the one
+  // checkout runs on.
+  storeUrl: 'https://shop.kcscustomcomputers.com',
 
   // Override only if the contact form ever moves off /contact.
   contactUrl: '',
