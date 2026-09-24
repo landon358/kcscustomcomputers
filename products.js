@@ -1,56 +1,16 @@
-// Static product catalogue.
-//
-// This is the fallback AND the source of presentation detail. When Shopify is
-// configured, shopify.js merges live commerce data (price, stock, variant ID,
-// images) over these entries, matching Shopify's product `handle` to `id`
-// below — so keep the handles in Shopify identical to these ids.
-//
-// Everything Shopify does not model well — specs, fps benchmarks, tagline —
-// keeps living here.
-window.PRODUCTS_STATIC = [
-  {
-    id: 'prime-s', name: 'Prime S', kind: 'prime', price: 1300, inStock: true,
-    images: ['images/prime-s.jpg', 'images/hero-01-white-openframe.jpg'],
-    tagline: 'The entry point that still plays everything at 1080p high.',
-    specs: [['CPU', 'Ryzen 5 7600X · 6C/12T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5060 8GB'], ['Memory', '16GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '700W 80+ Bronze'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
-    fps: [['Fortnite', 165], ['CS2', 240], ['Warzone', 130]]
-  },
-  {
-    id: 'prime-s-pro', name: 'Prime S Pro', kind: 'prime', price: 1400, inStock: true,
-    images: ['images/prime-s-pro.jpg', 'images/hero-02-white-matx.jpg'],
-    tagline: 'Same chassis, a meaningfully faster card.',
-    specs: [['CPU', 'Ryzen 5 7600X · 6C/12T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5060 Ti 8GB'], ['Memory', '16GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '700W 80+ Bronze'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
-    fps: [['Fortnite', 185], ['CS2', 265], ['Warzone', 148]]
-  },
-  {
-    id: 'prime-m', name: 'Prime M', kind: 'prime', price: 1900, inStock: true, popular: true,
-    images: ['images/prime-m-01.jpg', 'images/prime-m-02.jpg'],
-    tagline: 'The one most people should buy.',
-    specs: [['CPU', 'Ryzen 7 7700X · 8C/16T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5070 12GB'], ['Memory', '32GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
-    fps: [['Fortnite', 215], ['CS2', 300], ['Warzone', 172]]
-  },
-  {
-    id: 'prime-m-pro', name: 'Prime M Pro', kind: 'prime', price: 2000, inStock: false,
-    stockNote: 'Next batch mid-August',
-    images: ['images/prime-m-02.jpg', 'images/prime-m-01.jpg'],
-    tagline: 'The X3D chip, without the X-class card.',
-    specs: [['CPU', 'Ryzen 7 7800X3D · 8C/16T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5070 12GB'], ['Memory', '32GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
-    fps: [['Fortnite', 240], ['CS2', 335], ['Warzone', 188]]
-  },
-  {
-    id: 'prime-x', name: 'Prime X', kind: 'prime', price: 2550, inStock: true,
-    images: ['images/prime-x.jpg', 'images/prime-x-02.jpg'],
-    tagline: 'Top of the range, built to stay there.',
-    specs: [['CPU', 'Ryzen 7 7800X3D · 8C/16T'], ['Cooler', '360mm AIO'], ['GPU', 'RTX 5070 Ti 16GB'], ['Memory', '32GB DDR5-6000'], ['Storage', '1TB NVMe SSD'], ['Power', '850W 80+ Gold'], ['Case', 'Airflow mid tower, glass side'], ['OS', 'Windows 11 Pro']],
-    fps: [['Fortnite', 265], ['CS2', 370], ['Warzone', 205]]
-  }
-];
+/* Shared helpers, and the live product list.
+ *
+ * This file used to carry a hand-written copy of the catalogue, used both as
+ * presentation detail and as a fallback when Shopify could not be reached. It
+ * is gone: every machine's specs, benchmarks and photographs live in Shopify
+ * now, and the copy here was a page's first paint — so a product page opened
+ * showing last year's name and price for a second before the real one
+ * arrived. Nothing is drawn now until Shopify answers.
+ */
 
-// Live catalogue. Starts as the static list so synchronous page code keeps
-// working, then gets replaced in place once Shopify responds.
-window.PRODUCTS = window.PRODUCTS_STATIC.slice();
+// Filled by shopify.js once the catalogue arrives.
+window.PRODUCTS = [];
 
-window.byId = function (id) { return window.PRODUCTS.find(function (p) { return p.id === id; }) || window.PRODUCTS[2]; };
 // Whole dollars when the price is whole — every PC is — and cents when it is
 // not. Rounding everything read fine at $1,850 and would print a $14.99 stand
 // as $15, and an add-on total that disagreed with the cart by a cent a line.

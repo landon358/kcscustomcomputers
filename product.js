@@ -11,7 +11,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var handle = new URLSearchParams(location.search).get('id');
-  var p = window.byId(handle);
+  var p = null;                  // the product, once Shopify has answered
   var shot = 0;
   var qty = 1;
   var added = false;
@@ -218,6 +218,7 @@
   /* ------------------------------------------------ accessory options ---- */
 
   function renderOptions() {
+    if (!p) return;                 // nothing to draw until Shopify answers
     var box = $('p-opts');
     var opts = isAccessory(p) ? (p.options || []) : [];
     box.hidden = !opts.length;
@@ -330,6 +331,7 @@
   }
 
   function renderAddons() {
+    if (!p) return;                 // nothing to draw until Shopify answers
     var box = $('p-addons');
     var list = addonList();
     box.hidden = !list.shown.length;
@@ -390,6 +392,7 @@
   /* ------------------------------------------------------ buy module ---- */
 
   function renderPrice() {
+    if (!p) return;                 // nothing to draw until Shopify answers
     $('p-price').textContent = window.money(current().price);
     var cur = current();
     var stock = $('p-stock');
@@ -405,6 +408,7 @@
   }
 
   function renderBuy() {
+    if (!p) return;                 // nothing to draw until Shopify answers
     var buy = $('p-buy'), note = $('p-note');
     var cur = current();
 
@@ -601,7 +605,10 @@
     $('crumb-name').textContent = p.name;
     $('crumb-link').textContent = acc ? 'Accessories' : 'Shop Pre-Built';
     $('crumb-link').href = acc ? 'shop.html#collection-' + ACCESSORY_HANDLE : 'shop.html';
-    $('p-kind').textContent = acc ? 'Accessory' : (p.kind === 'deal' ? 'One-time deal' : 'Prime Series');
+    // KC's own name for the line this machine belongs to — "Summit Series -
+    // AMD", "Core Series", "One Time Deals" — rather than a word chosen here
+    // that goes stale the moment he renames a collection.
+    $('p-kind').textContent = p.sectionTitle || (acc ? 'Accessory' : 'Pre-built');
     $('p-name').textContent = p.name;
     $('p-tagline').textContent = p.tagline;
     // an empty paragraph still takes its margin, so hide it outright
@@ -656,30 +663,38 @@
     paintSeo(p);
   }
 
-  /* Paint straight away only if the static catalogue actually has this page.
+  /* Nothing is painted until Shopify answers.
    *
-   * byId() falls back to Prime M for an id it does not know, which was harmless
-   * when every page was a Prime. A deal or an accessory is only in Shopify, so
-   * its page opened as a $1,900 Prime M — name, photo, specs, title — and then
-   * swapped to a $15 stand a moment later. Until the live data lands, show
-   * nothing rather than the wrong product.
+   * byId() used to fall back to a built-in product for an id it did not know,
+   * so a deal or an accessory page opened as a $1,900 machine and swapped a
+   * moment later. There is no built-in catalogue now, and the page stays blank
+   * for the few hundred milliseconds it takes to hear back.
    */
   var main = $('main');
-  var known = (window.PRODUCTS_STATIC || []).some(function (x) { return x.id === handle; });
-  resetSelection();
-  if (known || !window.Shopify.configured) paint();
-  else main.style.visibility = 'hidden';
+  main.style.visibility = 'hidden';
 
-  window.Shopify.loadProducts().then(function (list) {
-    window.PRODUCTS = list;
-    /* By the site's id first, then by Shopify handle. The Primes have ids of
-     * their own (prime-s) that differ from their handles (beginner-build), and
-     * links from KC's old Shopify storefront — /products/beginner-build, now
-     * forwarded here by _redirects — carry the handle. */
-    var fresh = list.filter(function (x) { return x.id === handle; })[0] ||
-                list.filter(function (x) { return x.handle === handle; })[0];
-    if (fresh) { p = fresh; shot = 0; resetSelection(); }
-    paint();
+  window.Shopify.loadCatalogue().then(function (cat) {
+    window.PRODUCTS = cat.products;
     main.style.visibility = '';
+
+    var fresh = cat.products.filter(function (x) { return x.id === handle; })[0];
+    if (!fresh) {
+      // Either the catalogue could not be loaded, or this id is not a product
+      // KC sells any more — an old link, or one he has unpublished.
+      document.querySelector('.product').innerHTML = cat.error
+        ? window.Shopify.unavailableHtml('this machine')
+        : '<div class="unavailable" role="status"><b>This one is no longer listed.</b>' +
+          '<p>It may have sold or been replaced. <a href="shop.html">See what KC has now</a>, ' +
+          'or email <a href="mailto:fegelykc@gmail.com">fegelykc@gmail.com</a>.</p></div>';
+      document.querySelector('.crumbs').hidden = true;
+      $('p-related').closest('section').hidden = true;
+      document.title = "Not found | KC's Custom Computers";
+      return;
+    }
+
+    p = fresh;
+    shot = 0;
+    resetSelection();
+    paint();
   });
 })();

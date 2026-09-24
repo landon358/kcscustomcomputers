@@ -94,7 +94,7 @@
     } else {
       body.innerHTML =
         '<div class="cart__empty"><b>Your cart is empty</b>' +
-        'Pick a Prime Series build or grab a one-time deal.</div>';
+        'Pick a build from the shop, or grab a one-time deal.</div>';
     }
     foot.hidden = true;
     countEl.textContent = '';
@@ -140,12 +140,14 @@
       '<button class="btn btn--primary btn--lg btn--block" id="cart-checkout">Checkout</button>';
 
     document.getElementById('cart-checkout').addEventListener('click', function () {
-      this.textContent = 'Redirecting…';
-      this.disabled = true;
-      if (!window.Cart.checkout()) {
-        this.textContent = 'Checkout';
-        this.disabled = false;
-      }
+      var btn = this;
+      btn.textContent = 'Redirecting…';
+      btn.disabled = true;
+
+      offerProtection().then(function (go) {
+        if (!go) { resetCheckoutButton(); return; }          // they closed the offer
+        if (!window.Cart.checkout()) resetCheckoutButton();  // nothing to check out with
+      });
     });
 
     syncBadges(cart.count);
@@ -177,6 +179,132 @@
         console.error('[cart]', err.message);
         row.style.opacity = '';
       }).then(function () { busy = false; });
+    });
+  }
+
+  function resetCheckoutButton() {
+    var btn = document.getElementById('cart-checkout');
+    if (!btn) return;
+    btn.textContent = 'Checkout';
+    btn.disabled = false;
+  }
+
+  /* Coming back from Shopify.
+   *
+   * Checkout leaves the site, and the browser's back button restores this page
+   * exactly as it was left — including a Checkout button reading "Redirecting…"
+   * and disabled, which then does nothing. So the drawer is rebuilt on the way
+   * back in, and the cart re-read from Shopify: by then it may have been paid
+   * for, in which case it is gone and the drawer should say so.
+   */
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    resetCheckoutButton();
+    if (window.Cart.enabled) window.Cart.hydrate();
+    else render(window.Cart.get());
+  });
+
+  /* ------------------------------------------------- protection plan ---- */
+
+  /* Offered once, on the way to checkout, when KC has a protection plan
+   * published and it is not already in the cart. Resolves true to carry on to
+   * checkout, false if the shopper closed the offer without choosing.
+   *
+   * Everything shown comes from the product in Shopify — its name, its own
+   * description and its price — so what the plan covers is only ever what KC
+   * wrote, never wording invented here.
+   */
+  var PLAN_DISMISSED = 'kcc_plan_offered';
+
+  function findPlan() {
+    var cfg = window.SHOPIFY_CONFIG || {};
+    var handle = cfg.protectionPlanHandle || '';
+    return (window.PRODUCTS || []).filter(function (p) {
+      if (!p.inStock) return false;
+      return handle ? p.id === handle || p.handle === handle
+                    : /protection plan/i.test(p.name || '');
+    })[0] || null;
+  }
+
+  function planInCart(plan) {
+    var cart = window.Cart.get();
+    if (!cart) return false;
+    return cart.lines.some(function (l) { return l.handle === plan.handle || l.handle === plan.id; });
+  }
+
+  // The drawer opens on pages that never load the catalogue (contact, thanks),
+  // so make sure it is there before looking for the plan. loadCatalogue is
+  // memoised, so this costs nothing on a page that already has it.
+  function withCatalogue() {
+    if ((window.PRODUCTS || []).length || !window.Shopify || !window.Shopify.configured) {
+      return Promise.resolve();
+    }
+    return window.Shopify.loadCatalogue().then(function (cat) {
+      if (!cat.error) window.PRODUCTS = cat.products;
+    });
+  }
+
+  function offerProtection() {
+    return withCatalogue().then(showOffer);
+  }
+
+  function showOffer() {
+    var plan = findPlan();
+    var cart = window.Cart.get();
+    var already = false;
+    try { already = sessionStorage.getItem(PLAN_DISMISSED) === '1'; } catch (err) { /* private mode */ }
+
+    if (!plan || !cart || already || planInCart(plan)) return Promise.resolve(true);
+
+    var variant = (plan.variants || []).filter(function (v) { return v.available; })[0];
+    if (!variant) return Promise.resolve(true);
+
+    return new Promise(function (resolve) {
+      var wrap = document.createElement('div');
+      wrap.className = 'plan';
+      wrap.setAttribute('role', 'dialog');
+      wrap.setAttribute('aria-modal', 'true');
+      wrap.setAttribute('aria-labelledby', 'plan-title');
+      wrap.innerHTML =
+        '<div class="plan__card">' +
+          '<h2 class="plan__title" id="plan-title">Protect your purchase</h2>' +
+          '<p class="plan__name">' + esc(plan.name) + ' &middot; ' + money(variant.price, cart.currency) + '</p>' +
+          (plan.blurb ? '<p class="plan__copy">' + esc(plan.blurb) + '</p>' : '') +
+          '<button type="button" class="btn btn--primary btn--lg btn--block" id="plan-add">' +
+            'Add for ' + money(variant.price, cart.currency) + '</button>' +
+          '<button type="button" class="plan__skip" id="plan-skip">No thanks, continue to checkout</button>' +
+        '</div>';
+      document.body.appendChild(wrap);
+      document.getElementById('plan-add').focus();
+
+      function finish(addIt) {
+        try { sessionStorage.setItem(PLAN_DISMISSED, '1'); } catch (err) { /* private mode */ }
+        if (!addIt) { wrap.remove(); resolve(true); return; }
+
+        var add = document.getElementById('plan-add');
+        add.disabled = true;
+        add.textContent = 'Adding…';
+        window.Cart.addLines([{ merchandiseId: variant.id, quantity: 1 }])
+          .then(function () { wrap.remove(); resolve(true); })
+          .catch(function (err) {
+            console.error('[plan]', err.message);
+            add.disabled = false;
+            add.textContent = 'Could not add — continue to checkout';
+            add.onclick = function () { wrap.remove(); resolve(true); };
+          });
+      }
+
+      document.getElementById('plan-add').addEventListener('click', function () { finish(true); });
+      document.getElementById('plan-skip').addEventListener('click', function () { finish(false); });
+      wrap.addEventListener('click', function (e) {
+        // closing without choosing leaves them in the cart, not at checkout
+        if (e.target === wrap) { wrap.remove(); resolve(false); }
+      });
+      document.addEventListener('keydown', function onKey(e) {
+        if (e.key !== 'Escape') return;
+        document.removeEventListener('keydown', onKey);
+        if (wrap.parentNode) { wrap.remove(); resolve(false); }
+      });
     });
   }
 

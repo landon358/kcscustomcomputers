@@ -487,7 +487,15 @@
       '</span></a>';
   }
 
-  function renderDeals() {
+  function renderDeals(section) {
+    // Heading and sub-line from the collection itself, like every other section
+    if (section) {
+      var head = $('deals').querySelector('.section__head');
+      head.querySelector('h2').textContent = section.title;
+      var eb = head.querySelector('.eyebrow');
+      eb.textContent = section.eyebrow || '';
+      eb.hidden = !section.eyebrow;
+    }
     var deals = window.PRODUCTS.filter(function (p) { return p.kind === 'deal'; });
     $('deal-grid').innerHTML = deals.map(function (p) { return compactCard(p, '1 of 1'); }).join('');
     // KC sells the one-offs as he gets them, so there will be stretches with
@@ -553,9 +561,11 @@
 
   /* -------------------------------------------------------------- go ---- */
 
-  primeConfig.update(window.PRODUCTS.filter(function (p) { return p.kind === 'prime'; }));
-  renderDeals();
-  renderCollections([]);
+  // Nothing is drawn from a catalogue of our own any more, so the sections
+  // below the hero stay empty until Shopify answers. The hero, the manifesto
+  // and the custom-build block are ours and show immediately.
+  $('prebuilts').hidden = true;
+  $('deals').hidden = true;
   readScroll();
   eased = target;
   fitCallouts();
@@ -565,6 +575,17 @@
   // Live Shopify pricing, stock and collections, once they arrive. The static
   // catalogue has no collections, so the first pass above renders none.
   window.Shopify.loadCatalogue().then(function (cat) {
+    if (cat.error) {
+      // Say so where the machines would have been, and leave the rest of the
+      // page — the hero and the custom-build block — as it is.
+      var box = document.createElement('section');
+      box.className = 'section section--tight';
+      box.innerHTML = window.Shopify.unavailableHtml('our machines');
+      $('home-flow').insertBefore(box, $('build-your-own'));
+      return;
+    }
+
+    $('prebuilts').hidden = false;
     window.PRODUCTS = cat.products;
     var primeSection = cat.sections.filter(function (s) { return s.handle === PRIME_HANDLE; })[0];
     primeConfig.update(
@@ -572,12 +593,12 @@
                    : cat.products.filter(function (p) { return p.kind === 'prime'; }),
       primeSection);
     var configs = renderExtraConfigurators(cat.sections);
-    renderDeals();
+    var dealSection = cat.sections.filter(function (s) { return s.kind === 'deal'; })[0];
+    renderDeals(dealSection);
     // A collection with its own configurator is not repeated as a card row.
     var asConfig = SITE.homeConfigurators || [];
     var rows = renderCollections(cat.sections.filter(function (s) { return asConfig.indexOf(s.handle) === -1; }));
 
-    var dealSection = cat.sections.filter(function (s) { return s.kind === 'deal'; })[0];
     var custom = typeof SITE.customBuildHomeOrder === 'number' ? SITE.customBuildHomeOrder : null;
     // Listed in the page's natural order, which is what unnumbered sections
     // and ties fall back to.

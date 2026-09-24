@@ -139,17 +139,6 @@
    *     and rendering a bare "240 fps" would claim a precision he does not.
    *     The number is parsed only to size the bar.
    */
-  // products.js still stores pairs; bring them into the parser's shape so the
-  // renderers only ever see one kind of row.
-  function rows(list) {
-    return (list || []).map(function (r) {
-      if (r && typeof r === 'object' && !r.length) return r;
-      var n = Number(r[1]);
-      return { label: String(r[0]), value: isFinite(n) ? n : null,
-               text: isFinite(n) ? n + ' fps' : String(r[1]) };
-    });
-  }
-
   function parseFps(raw) {
     if (!raw) return [];
     raw = String(raw).trim();
@@ -241,12 +230,6 @@
     '  } }' +
     '}';
 
-  // The live listings predate this site, so their handles are not the
-  // catalogue ids. CFG.handles maps one onto the other; anything unmapped
-  // falls through on its own handle so a newly added product still appears.
-  var HANDLES = CFG.handles || {};
-  function siteId(handle) { return HANDLES[handle] || handle; }
-
   // Shopify product -> the shape the rest of the site already renders.
   // `section` is the collection the node came from, when it came from one.
   /* Options a buyer actually chooses between.
@@ -282,11 +265,6 @@
     var variant = variants.filter(function (v) { return v.available; })[0] || variants[0] || null;
     var images = node.images.edges.map(function (e) { return e.node.url; });
     var tags = (node.tags || []).map(function (t) { return String(t).toLowerCase(); });
-    var id = siteId(node.handle);
-    var local = (window.PRODUCTS_STATIC || []).filter(function (p) {
-      return p.id === id;
-    })[0] || {};
-
     var meta = metaMap(node.metafields);
     var metaSpecs = SPEC_FIELDS
       .filter(function (f) { return meta[f[0]]; })
@@ -296,7 +274,7 @@
     var fps = {}, fpsNotes = {};
     FPS_FIELDS.forEach(function (f) {
       var parsed = parseFps(meta[f[0]]);
-      fps[f[1]] = parsed.length ? parsed : rows(local[f[1]]);
+      fps[f[1]] = parsed;
       // A field holding something that is not rows — "Untested", "Coming
       // soon" — is KC saying where he has got to. Keep his words rather than
       // discarding them and asserting our own status in their place.
@@ -304,7 +282,7 @@
     });
 
     return {
-      id: id,
+      id: node.handle,
       handle: node.handle,
       /* Shopify wins, for everything it knows.
        *
@@ -316,28 +294,27 @@
        * a stable identity for a one-off, so nothing presentational may
        * override what the store actually says.
        */
-      name: node.title || local.name,
+      name: node.title,
       // Collection membership first, then a tag, then the catalogue. The live
       // products carry no tags, so without the collections everything would
       // read as a prime and the deals row would come up empty.
       // The tags are the fallback for when collections cannot be read at all, so
       // an accessory tagged as one still does not render as a PC.
       kind: section || (tags.indexOf('deal') !== -1 ? 'deal'
-        : (tags.indexOf('accessory') !== -1 ? 'accessory' : (local.kind || 'prime'))),
-      popular: tags.indexOf('popular') !== -1 || !!local.popular,
+        : (tags.indexOf('accessory') !== -1 ? 'accessory' : 'prime')),
+      popular: tags.indexOf('popular') !== -1,
       price: parseFloat(node.priceRange.minVariantPrice.amount),
       // Set when variants differ in price, so a card can say "From $15"
       // instead of claiming the cheapest colour's price for all of them.
       priceMax: parseFloat((node.priceRange.maxVariantPrice || node.priceRange.minVariantPrice).amount),
       currency: node.priceRange.minVariantPrice.currencyCode,
       inStock: node.availableForSale,
-      stockNote: local.stockNote,
       variantId: variant ? variant.id : null,
       variants: variants,
       options: realOptions(node),
       // Same reasoning: KC's own photographs of the machine he is actually
       // selling, and the catalogue art only if the store has none.
-      images: images.length ? images : (local.images || []),
+      images: images,
       /* Presentation: Shopify metafields first, products.js second.
        *
        * Each block falls back on its own — a product can carry its specs in
@@ -345,7 +322,7 @@
        * all-or-nothing within the block on purpose: a table half from Admin
        * and half from the repo would be a nightmare to debug.
        */
-      tagline: meta.best_for || local.tagline || '',
+      tagline: meta.best_for || '',
       /* No blurb for now.
        *
        * What was here was demo copy of mine making claims nobody had checked
@@ -361,10 +338,10 @@
       // ...except on an accessory. KC's PC descriptions are spec dumps, but a
       // stand has no spec table for the description to repeat, so there it is
       // the only prose there is and it is shown.
-      blurb: meta.blurb || local.blurb ||
+      blurb: meta.blurb ||
         (section === 'accessory' || tags.indexOf('accessory') !== -1
           ? String(node.description || '').trim() : ''),
-      specs: metaSpecs.length ? metaSpecs : (local.specs || []),
+      specs: metaSpecs,
       fps: fps.fps,
       fps1440: fps.fps1440,
       fps4k: fps.fps4k,
@@ -377,21 +354,6 @@
       // assert a methodology nobody had verified.
       benchNote: meta.bench_note || ''
     };
-  }
-
-  // The static catalogue stores fps as pairs; the renderers expect parser rows,
-  // so give the fallback path the same shape the Shopify path produces.
-  function staticCatalogue() {
-    return (window.PRODUCTS_STATIC || []).map(function (p) {
-      var out = {};
-      for (var k in p) if (Object.prototype.hasOwnProperty.call(p, k)) out[k] = p[k];
-      out.fps = rows(p.fps);
-      out.fps1440 = rows(p.fps1440);
-      out.fps4k = rows(p.fps4k);
-      out.scores = rows(p.scores);
-      out.benchNote = p.benchNote || '';
-      return out;
-    });
   }
 
   // Both grids read as a price ladder — the shop copy sells "from $1,300" and
@@ -490,8 +452,14 @@
       var members = [];
 
       col.products.nodes.forEach(function (n) {
-        var id = siteId(n.handle);
-        if (!seen[id]) seen[id] = normalise(n, kind);
+        var id = n.handle;
+        if (!seen[id]) {
+          seen[id] = normalise(n, kind);
+          // The collection that claimed it, named the way KC named it. The
+          // product page shows this above the machine's name, so renaming
+          // "Summit Series - AMD" in Admin renames it there too.
+          seen[id].sectionTitle = col.title || '';
+        }
         members.push(seen[id]);
       });
 
@@ -580,22 +548,31 @@
       .map(function (x) { return x.b; });
   }
 
-  /* Resolves to { products, sections } either way: Shopify when configured and
-   * reachable, the static catalogue otherwise. Never rejects.
+  /* Resolves to { products, sections, error }.
    *
-   * Both fallbacks return no sections. That is deliberate — sections only
-   * exist in Shopify, and inventing them from products.js would put headings
-   * on the page for categories the store does not have.
+   * Never rejects: `error` is set instead, and every page shows the same
+   * "could not load" message rather than any stand-in prices. There used to be
+   * a hand-written catalogue to fall back on, and it was drawn first on every
+   * page load — so a machine flashed up at last year's name and price before
+   * the real one replaced it. Nothing beats showing nothing for a moment.
    *
    * Memoised, because a page may ask for products and sections separately and
    * there is no reason to make the same round trip twice.
    */
   var cataloguePromise = null;
 
+  /* What a visitor sees when the catalogue cannot be loaded. One wording, in
+   * one place, and it gives them a way to reach KC rather than a dead end. */
+  function unavailableHtml(what) {
+    return '<div class="unavailable" role="status">' +
+      '<b>We couldn&rsquo;t load ' + (what || 'our machines') + ' just now.</b>' +
+      '<p>Please refresh the page, or reach KC directly: ' +
+      '<a href="tel:+12487979551">(248) 797-9551</a> or ' +
+      '<a href="mailto:fegelykc@gmail.com">fegelykc@gmail.com</a>.</p></div>';
+  }
+
   function loadCatalogue() {
     if (cataloguePromise) return cataloguePromise;
-
-    var flat = function (list) { return { products: ladder(list), sections: [] }; };
 
     var live = configured
       ? query(CATALOGUE_QUERY, { cols: 20, per: 30 }).then(function (data) {
@@ -604,26 +581,54 @@
           // A store with no collections published to this channel resolves to
           // an empty list rather than erroring, so treat that as a miss.
           if (!cat.products.length) throw new Error('no collections published to this channel');
+          cat.error = null;
           return cat;
         })
-      : Promise.reject(new Error('Shopify not configured'));
+      : Promise.reject(new Error('Shopify is not configured'));
 
     cataloguePromise = live
       .catch(function (err) {
-        if (configured) {
-          console.warn('[shopify] collections unavailable (' + err.message + '), reading all products');
-        }
-        return loadFlat().then(flat);
+        // Collections unreadable, but the products themselves may not be —
+        // worth one more ask before telling a visitor nothing is available.
+        console.warn('[shopify] collections unavailable (' + err.message + '), reading all products');
+        return loadFlat().then(function (list) {
+          return { products: list, sections: [], error: null };
+        });
       })
       .catch(function (err) {
-        console.warn('[shopify] falling back to static catalogue:', err.message);
-        return flat(staticCatalogue());
+        console.warn('[shopify] catalogue could not be loaded:', err.message);
+        return { products: [], sections: [], error: err };
       });
 
     return cataloguePromise;
   }
 
   // The three pages that only want a product list still get one.
+  /* The order Shopify itself calls best-selling.
+   *
+   * Sales figures are not in the Storefront API, but its ordering is: asking
+   * for products by BEST_SELLING returns them ranked, and only the handles are
+   * needed to apply that ranking to what is already loaded. Memoised, and
+   * resolves to [] if it fails, which leaves the list in its normal order
+   * rather than breaking the page.
+   */
+  var bestSellersPromise = null;
+
+  function loadBestSellers() {
+    if (bestSellersPromise) return bestSellersPromise;
+    bestSellersPromise = (configured
+      ? query('query Best($first: Int!) { products(first: $first, sortKey: BEST_SELLING) { nodes { handle } } }', { first: 60 })
+          .then(function (data) {
+            return data.products.nodes.map(function (n) { return n.handle; });
+          })
+      : Promise.reject(new Error('Shopify is not configured')))
+      .catch(function (err) {
+        console.warn('[shopify] best sellers unavailable:', err.message);
+        return [];
+      });
+    return bestSellersPromise;
+  }
+
   function loadProducts() {
     return loadCatalogue().then(function (c) { return c.products; });
   }
@@ -800,6 +805,8 @@
     shopSections: shopSections,
     homeSections: homeSections,
     byOrder: byOrder,
+    loadBestSellers: loadBestSellers,
+    unavailableHtml: unavailableHtml,
     esc: esc,
     colourOf: colourOf,
     accountUrl: function () {

@@ -173,3 +173,51 @@
 @media (prefers-reduced-motion: reduce) {
   .cart, .cart-scrim, .nav__cart-badge { transition: none; }
 }
+
+
+/* ------------------------------------------------ protection plan ------- */
+
+/* Offered once on the way to checkout, over the drawer. */
+.plan {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(11, 27, 63, 0.45);
+  backdrop-filter: blur(3px);
+}
+.plan__card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 30px 30px 24px;
+  box-shadow: 0 30px 70px rgba(11, 27, 63, 0.28);
+  text-align: center;
+}
+.plan__title { font: 700 26px var(--display); letter-spacing: -0.025em; margin: 0; }
+.plan__name { margin: 14px 0 0; font: 600 15px var(--ui); color: var(--ink); }
+.plan__copy {
+  margin: 10px 0 0;
+  font: 400 14.5px/1.6 var(--ui);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.plan__card .btn { margin-top: 22px; }
+.plan__skip {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  border: none;
+  background: none;
+  font: 500 13.5px var(--ui);
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.plan__skip:hover { color: var(--ink); text-decoration: underline; }
+
+@media (prefers-reduced-motion: reduce) { .plan { backdrop-filter: none; } }

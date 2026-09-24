@@ -384,18 +384,82 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
    shop_order says so. */
 .section.section--lead { padding-top: 48px; }
 
+/* Name first, in the display face, with its line underneath in blue. The two
+   used to sit side by side on one baseline, which read as one long sentence
+   and buried the name — "One-time deals  One of one. When it's gone, it's
+   gone." Placed by grid rather than by source order, so the markup can keep
+   the eyebrow first where it already does. */
 .section__head {
-  display: flex;
-  align-items: baseline;
-  gap: 18px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 18px;
   margin-bottom: 26px;
 }
 .section__head h2 {
+  grid-column: 1;
+  grid-row: 1;
   font: 700 clamp(28px, 2.6vw, 40px) var(--display);
   letter-spacing: -0.02em;
+  text-wrap: balance;
 }
-.section__head .spacer { margin-left: auto; }
+.section__head .eyebrow {
+  grid-column: 1;
+  grid-row: 2;
+  margin-top: 6px;
+  /* these read as sentences KC writes in Shopify, not as labels */
+  font: 500 14px/1.45 var(--ui);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--blue);
+  text-wrap: pretty;
+}
+.section__head .spacer {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  margin-left: auto;
+}
+
+/* Sort control on the shop page. */
+.sortbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 26px var(--pad-x) 0;
+}
+.sortbar__label {
+  font: 600 11px var(--ui);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.sortbar__opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.sortopt {
+  font: 600 12.5px var(--ui);
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.sortopt:hover { border-color: var(--blue); color: var(--ink); }
+.sortopt.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.sortopt:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* Shown in place of the machines when the catalogue cannot be loaded. */
+.unavailable {
+  max-width: 620px;
+  padding: 26px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.unavailable b { font: 700 19px var(--display); letter-spacing: -0.015em; }
+.unavailable p { margin: 8px 0 0; font: 400 15px/1.6 var(--ui); color: var(--ink-2); }
+.unavailable a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
 
 /* A collection's own description, from Shopify. Sits under the heading and
    above the row, at the width prose stays readable at rather than the full
@@ -633,13 +697,23 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   box-shadow: 0 18px 50px rgba(11, 27, 63, 0.06);
 }
 .custom h2 {
-  margin: 14px 0 0;
+  margin: 0;
   font: 700 clamp(30px, 3.2vw, 50px)/1.1 var(--display);
   max-width: 760px;
   text-wrap: pretty;
 }
+/* A step above the paragraph below it, a step below the name above it.
+   Written as `.custom > p.custom__lead` so it outranks the `.custom > p`
+   rule below, which would otherwise pull it back to the body size. */
+.custom > p.custom__lead {
+  margin: 14px 0 0;
+  font: 500 clamp(19px, 1.7vw, 23px)/1.45 var(--ui);
+  color: var(--ink);
+  max-width: 700px;
+  text-wrap: pretty;
+}
 .custom > p {
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   font: 400 17px/1.6 var(--ui);
   color: var(--ink-2);
   max-width: 620px;

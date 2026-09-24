@@ -341,6 +341,12 @@
   align-items: center;
   justify-content: center;
 }
+/* Icons beside the three page links, only in the opened phone menu. The
+   desktop bar is a tight row of text buttons where icons would just add
+   noise; stacked full-width rows on a phone, they give the eye something to
+   land on. */
+.nav__ico { display: none; }
+
 /* Words beside the cart and account icons, only in the opened phone menu. On
    a desktop bar the icons sit in a row where they read on their own; stacked
    full-width in the menu, a bare bag and a bare person do not. */
@@ -376,6 +382,8 @@
   .nav__actions.is-open .btn { height: 46px; justify-content: flex-start; padding: 0 18px; }
   .nav__actions.is-open .btn--icon { width: auto; }
   .nav__actions.is-open .nav__label { display: inline; margin-left: 12px; }
+  .nav__actions.is-open .nav__ico { display: inline-flex; align-items: center; margin-right: 12px; }
+  .nav__actions.is-open .btn--ghost, .nav__actions.is-open .btn--primary { justify-content: flex-start; }
   /* The count sits after the word rather than pinned to the corner of a row
      that is now the width of the screen, and takes no room while empty. */
   .nav__actions.is-open .nav__cart-badge { position: static; margin-left: 8px; border: 0; }

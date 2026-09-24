@@ -75,6 +75,19 @@ window.SHOPIFY_CONFIG = {
    */
   homeMaxSections: 3,
 
+  /* The protection plan offered on the way to checkout.
+   *
+   * Leave blank and the site looks for a published product whose name contains
+   * "protection plan". Set a handle to name one exactly. If no such product is
+   * published, or it is out of stock, the offer simply never appears and
+   * Checkout behaves as it always has.
+   *
+   * Everything in that popup comes from the product itself — its name, its
+   * description and its price — so what the plan covers is whatever KC wrote
+   * in Shopify, and nothing is claimed on his behalf here.
+   */
+  protectionPlanHandle: '',
+
   /* ---------------------------------------------------------------------
    * Adding a product without touching this repo
    *
@@ -104,9 +117,9 @@ window.SHOPIFY_CONFIG = {
    *            per line. Renders as its own block; these share no scale with
    *            fps and would flatten the bars if mixed in.
    *
-   * Anything left blank falls back to that product's entry in products.js,
-   * matched through the handles map below. A product with neither still
-   * sells fine — it just shows an empty spec table.
+   * Anything left blank simply does not show. There is no second copy of the
+   * catalogue in this repo any more, so what is in Shopify is what visitors
+   * see — a product with no specs shows an empty spec table, not last year's.
    * ------------------------------------------------------------------- */
 
   /* ---------------------------------------------------------------------
@@ -185,26 +198,4 @@ window.SHOPIFY_CONFIG = {
    *   - Products inside a section run in Shopify's manual order, so dragging
    *     them around in Admin reorders the site.
    * ------------------------------------------------------------------- */
-
-  /* The live products were listed before this site existed, so their handles
-   * do not match the catalogue ids in products.js. This maps one to the other.
-   * Shopify stays authoritative for price, stock and variant IDs; products.js
-   * keeps the specs, benchmarks and copy, merged in by the id on the right.
-   *
-   * Only the five Prime machines are mapped. The one-time deals deliberately
-   * are not: KC relists those under whatever handle is free, so a slug that
-   * meant one machine last month means another today, and pinning a catalogue
-   * entry to it produced cards naming a machine that was not the one for sale.
-   * Deals are described entirely by their Shopify metafields.
-   *
-   * Handles come from Admin → Products → the product's URL slug. If you
-   * relist a Prime under a new handle, update it here.
-   */
-  handles: {
-    'beginner-build':                          'prime-s',      // Prime S      $1300
-    'beginner':                                'prime-s-pro',  // Prime S Pro  $1400
-    'beginner-build-copy':                     'prime-m',      // Prime M      $1900
-    'intermediate':                            'prime-m-pro',  // Prime M Pro  $2000
-    'intermediate-build-copy':                 'prime-x'       // Prime X      $2550
-  }
 };

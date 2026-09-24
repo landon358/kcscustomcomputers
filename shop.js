@@ -166,8 +166,16 @@
      * because it always sat straight under the page title; once it can be
      * second or third, and sit beside "Intel Prime Series", it has to say
      * which line it is. Name and eyebrow come from the collection itself. */
+    if (reserved.deal) {
+      var dh = dealSection.querySelector('.section__head');
+      dh.querySelector('h2').textContent = reserved.deal.title;
+      var deb = dh.querySelector('.eyebrow');
+      deb.textContent = reserved.deal.eyebrow || '';
+      deb.hidden = !reserved.deal.eyebrow;
+    }
+
     var prime = reserved.prime;
-    document.getElementById('prime-title').textContent = prime ? prime.title : 'Prime Series';
+    document.getElementById('prime-title').textContent = prime ? prime.title : 'Pre-builts';
     var eyebrow = document.getElementById('prime-eyebrow');
     eyebrow.textContent = prime && prime.eyebrow ? prime.eyebrow : '';
     eyebrow.hidden = !eyebrow.textContent;
@@ -189,6 +197,84 @@
     ].concat(extra.map(function (s, i) { return { el: nodes[i], order: s.shopOrder }; })));
   }
 
+  /* ------------------------------------------------------------ sort ---- */
+
+  /* "By series" is the page as built: the sections, in KC's order. Every other
+   * choice hides them and lists everything in one grid — a price order that
+   * starts again at each heading would not be a price order.
+   *
+   * Accessories are in here too: someone sorting by price is looking across
+   * everything KC sells, and leaving them out of only some orderings would be
+   * its own kind of surprise.
+   */
+  var catalogue = [];
+  var bestOrder = null;        // handles, ranked by Shopify; null until asked for
+
+  function sortedProducts(mode) {
+    var list = catalogue.slice();
+    if (mode === 'low') return list.sort(function (a, b) { return a.price - b.price; });
+    if (mode === 'high') return list.sort(function (a, b) { return b.price - a.price; });
+    if (mode === 'best') {
+      var rank = {};
+      (bestOrder || []).forEach(function (h, i) { rank[h] = i; });
+      // anything Shopify did not rank sits after what it did, cheapest first
+      return list.sort(function (a, b) {
+        var ra = rank[a.handle], rb = rank[b.handle];
+        if (ra === undefined && rb === undefined) return a.price - b.price;
+        if (ra === undefined) return 1;
+        if (rb === undefined) return -1;
+        return ra - rb;
+      });
+    }
+    return list;
+  }
+
+  function showSorted(mode) {
+    var flow = document.getElementById('shop-flow');
+    var results = document.getElementById('sort-results');
+
+    if (mode === 'series') {
+      flow.hidden = false;
+      results.hidden = true;
+      return;
+    }
+
+    var list = sortedProducts(mode);
+    document.getElementById('sort-grid').innerHTML = list.map(function (p) {
+      return p.kind === 'accessory' ? accessoryCard(p) : primeCard(p);
+    }).join('');
+    flow.hidden = true;
+    results.hidden = false;
+  }
+
+  function wireSort() {
+    var bar = document.getElementById('sortbar');
+    if (!bar) return;
+    bar.hidden = false;
+
+    bar.addEventListener('click', function (ev) {
+      var btn = ev.target.closest('.sortopt');
+      if (!btn || btn.classList.contains('is-on')) return;
+
+      Array.prototype.forEach.call(bar.querySelectorAll('.sortopt'), function (b) {
+        var on = b === btn;
+        b.classList.toggle('is-on', on);
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+
+      var mode = btn.getAttribute('data-sort');
+      if (mode !== 'best' || bestOrder) { showSorted(mode); return; }
+
+      // asked for the first time: fetch Shopify's ranking, then sort
+      btn.textContent = 'Best sellers…';
+      window.Shopify.loadBestSellers().then(function (handles) {
+        bestOrder = handles;
+        btn.textContent = 'Best sellers';
+        showSorted('best');
+      });
+    });
+  }
+
   /* The home page links to a section here by its anchor, but the sections do
    * not exist when the browser goes looking for it — they arrive with the
    * Shopify response, several hundred milliseconds later. So the jump has to
@@ -204,15 +290,23 @@
     if (target) target.scrollIntoView();
   }
 
-  // Paint from the static catalogue immediately, then again with live
-  // Shopify pricing, stock and collections once they land. The static
-  // catalogue has no collections, so the first pass renders none.
-  paint([], false);
+  // Empty until Shopify answers: this page is nothing but live products, and
+  // a stand-in catalogue is what used to flash the wrong prices here.
+  primeSection.hidden = true;
+  dealSection.hidden = true;
+
   window.Shopify.loadCatalogue().then(function (cat) {
+    if (cat.error) {
+      document.getElementById('shop-flow').innerHTML =
+        window.Shopify.unavailableHtml('our machines');
+      return;
+    }
+
+    primeSection.hidden = false;
     window.PRODUCTS = cat.products;
-    // `live` even when this is the static fallback: it is the final answer
-    // either way, and the heading should show rather than stay hidden
+    catalogue = cat.products;
     paint(cat.sections, true);
+    wireSort();
     honourHash();
   });
 })();
