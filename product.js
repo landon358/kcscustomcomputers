@@ -498,6 +498,11 @@
       note.textContent = 'Demo mode · connect Shopify in shopify-config.js to take orders';
     } else if (extras.length) {
       note.textContent = 'With ' + extras.map(label).join(', ');
+    } else if (isPlan(p)) {
+      // Nothing ships and nothing is collected: a plan is a service agreement.
+      // What it covers is its own page and the terms, not a line under a
+      // button, so this says nothing rather than something untrue.
+      note.textContent = '';
     } else {
       note.textContent = 'Ready to ship · local pickup in 24 hours';
     }
@@ -681,6 +686,9 @@
     $('p-specs-block').hidden = acc && !p.specs.length;
     $('p-bench-block').hidden = acc;
     $('p-warranty').hidden = acc;
+    // Free local pickup and insured shipping describe a thing in a box.
+    $('p-pickup').hidden = plan;
+    $('p-shipping').hidden = plan;
 
     $('p-specs').innerHTML = p.specs.map(function (s) {
       return '<dl class="spec"><dt>' + s[0] + '</dt><dd>' + s[1] + '</dd></dl>';
