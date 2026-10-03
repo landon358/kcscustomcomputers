@@ -28,6 +28,12 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://kcscustomcomputers.com/warranty</loc>
+    <lastmod>2026-10-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://kcscustomcomputers.com/privacy</loc>
     <lastmod>2026-09-14</lastmod>
     <changefreq>yearly</changefreq>

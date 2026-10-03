@@ -26,6 +26,10 @@
     ((window.SHOPIFY_CONFIG || {}).collections || {}).accessory || 'accessories';
 
   var isAccessory = function (x) { return x && x.kind === 'accessory'; };
+  var isPlan = function (x) { return x && x.kind === 'plan'; };
+  // Neither one is a computer, so neither gets a spec table, benchmark tabs,
+  // a warranty badge or add-ons of its own.
+  var notAPc = function (x) { return isAccessory(x) || isPlan(x); };
 
   /* -------------------------------------------------------- gallery ---- */
 
@@ -220,7 +224,9 @@
   function renderOptions() {
     if (!p) return;                 // nothing to draw until Shopify answers
     var box = $('p-opts');
-    var opts = isAccessory(p) ? (p.options || []) : [];
+    // A plan may well have options of its own one day — monthly against
+    // prepaid is exactly that shape — so it gets the picker too.
+    var opts = notAPc(p) ? (p.options || []) : [];
     box.hidden = !opts.length;
     if (!opts.length) { box.innerHTML = ''; return; }
 
@@ -273,11 +279,24 @@
    * link carries the rest, and says how many there are.
    */
   function addonList() {
-    if (isAccessory(p) || !available(current())) return { shown: [], total: 0 };
+    if (notAPc(p) || !available(current())) return { shown: [], total: 0 };
     var all = (window.PRODUCTS || []).filter(function (x) {
       return isAccessory(x) && x.inStock && variantsOf(x).some(available);
     });
     return { shown: all.slice(0, ADDON_LIMIT), total: all.length };
+  }
+
+  /* The protection plans offered on a machine's page.
+   *
+   * Same shape as the accessories above, and uncapped: there are two tiers,
+   * not a range. A plan on its own page offers nothing — buying a plan to go
+   * with a plan is not a thing.
+   */
+  function planList() {
+    if (notAPc(p) || !available(current())) return [];
+    return window.Shopify.plans(window.PRODUCTS || []).filter(function (x) {
+      return variantsOf(x).some(available);
+    });
   }
 
   function addonState(x) {
@@ -349,9 +368,34 @@
     });
   }
 
-  // The picked add-ons that will actually go in the cart with the build.
+  /* The protection plan block, above the accessories.
+   *
+   * It sits higher because it is the decision worth making at the same time
+   * as the machine — a plan bought later may need an inspection first. The
+   * rows are the accessory rows: KC asked for it to work the same way, and a
+   * second pattern for four rows would only be a second thing to learn.
+   */
+  function renderPlans() {
+    if (!p) return;
+    var box = $('p-plans');
+    var list = planList();
+    box.hidden = !list.length;
+    if (!list.length) { box.innerHTML = ''; return; }
+
+    keepFocus(box, function () {
+      box.innerHTML =
+        '<div class="addons__head">' +
+          '<span class="block__label">PROTECT YOUR PURCHASE</span>' +
+          '<a href="warranty.html">What is covered &rarr;</a>' +
+        '</div>' +
+        '<ul class="addons__list">' + list.map(addonRow).join('') + '</ul>';
+    });
+  }
+
+  // The picked add-ons and plans that will actually go in the cart with the
+  // build. One list: the cart does not care which block a line came from.
   function chosenAddons() {
-    return addonList().shown.filter(function (x) {
+    return addonList().shown.concat(planList()).filter(function (x) {
       return addons[x.id] && addons[x.id].on;
     }).map(function (x) {
       return { product: x, variant: variantOf(x, addons[x.id].variant) };
@@ -363,30 +407,33 @@
     warnings = [];
     failure = '';
     renderAddons();
+    renderPlans();
     renderBuy();
   }
 
-  $('p-addons').addEventListener('change', function (ev) {
-    var t = ev.target, id;
-    if ((id = t.getAttribute('data-addon-toggle'))) {
-      addons[id].on = t.checked;
-      addonsChanged();
-    } else if ((id = t.getAttribute('data-addon-select'))) {
-      addons[id].variant = t.value;
-      addons[id].on = true;
-      addonsChanged();
-    }
-  });
+  ['p-addons', 'p-plans'].forEach(function (box) {
+    $(box).addEventListener('change', function (ev) {
+      var t = ev.target, id;
+      if ((id = t.getAttribute('data-addon-toggle'))) {
+        addons[id].on = t.checked;
+        addonsChanged();
+      } else if ((id = t.getAttribute('data-addon-select'))) {
+        addons[id].variant = t.value;
+        addons[id].on = true;
+        addonsChanged();
+      }
+    });
 
-  $('p-addons').addEventListener('click', function (ev) {
-    var b = ev.target.closest('[data-addon][data-variant]');
-    if (!b || b.disabled) return;
-    var st = addons[b.getAttribute('data-addon')];
-    if (!st) return;
-    st.variant = b.getAttribute('data-variant');
-    // choosing a colour is choosing the stand
-    st.on = true;
-    addonsChanged();
+    $(box).addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-addon][data-variant]');
+      if (!b || b.disabled) return;
+      var st = addons[b.getAttribute('data-addon')];
+      if (!st) return;
+      st.variant = b.getAttribute('data-variant');
+      // choosing a colour is choosing the stand
+      st.on = true;
+      addonsChanged();
+    });
   });
 
   /* ------------------------------------------------------ buy module ---- */
@@ -418,7 +465,7 @@
       buy.disabled = true;
       buy.style.background = '';
       // an accessory sold out in one colour is not sold out
-      note.textContent = p.inStock && isAccessory(p)
+      note.textContent = p.inStock && notAPc(p)
         ? 'Sold out in this option — pick another above.'
         : (p.stockNote || 'Currently unavailable') + ' — email to be notified when it is back.';
       note.className = 'buynote is-out';
@@ -494,6 +541,7 @@
         // would add a second stand the buyer only asked for once.
         extras.forEach(function (a) { addons[a.product.id].on = false; });
         renderAddons();
+        renderPlans();
         window.CartUI.open();
       })
       .catch(function (err) {
@@ -529,10 +577,12 @@
     // sentence fits. A hard slice cut mid-word ("...tested in Walled"), which
     // is what actually shows in a search result.
     var desc;
-    if (isAccessory(p)) {
+    if (notAPc(p)) {
       // Its own description, cut at a word rather than mid-word, or a plain
       // statement of what and where if KC has not written one.
-      desc = p.name + ' — ' + (p.blurb || "an accessory from KC's Custom Computers, Walled Lake, Michigan.");
+      desc = p.name + ' — ' + (p.blurb ||
+        (isPlan(p) ? "a protection plan from KC's Custom Computers, Walled Lake, Michigan."
+                   : "an accessory from KC's Custom Computers, Walled Lake, Michigan."));
       if (desc.length > 158) desc = desc.slice(0, 157).replace(/\s+\S*$/, '') + '…';
     } else {
       var TAIL = '. Built and bench tested in Walled Lake, Michigan.';
@@ -599,16 +649,21 @@
   /* --------------------------------------------------------- repaint ---- */
 
   function paint() {
-    var acc = isAccessory(p);
+    var acc = notAPc(p);            // "not a computer", for the blocks below
+    var plan = isPlan(p);
 
     document.title = p.name + " — KC's Custom Computers";
     $('crumb-name').textContent = p.name;
-    $('crumb-link').textContent = acc ? 'Accessories' : 'Shop Pre-Built';
-    $('crumb-link').href = acc ? 'shop.html#collection-' + ACCESSORY_HANDLE : 'shop.html';
+    // A plan is not in the shop, so its crumb goes where its terms are.
+    $('crumb-link').textContent = plan ? 'Warranty & protection plans'
+      : (acc ? 'Accessories' : 'Shop Pre-Built');
+    $('crumb-link').href = plan ? 'warranty.html'
+      : (acc ? 'shop.html#collection-' + ACCESSORY_HANDLE : 'shop.html');
     // KC's own name for the line this machine belongs to — "Summit Series -
     // AMD", "Core Series", "One Time Deals" — rather than a word chosen here
     // that goes stale the moment he renames a collection.
-    $('p-kind').textContent = p.sectionTitle || (acc ? 'Accessory' : 'Pre-built');
+    $('p-kind').textContent = p.sectionTitle ||
+      (plan ? 'Protection plan' : (acc ? 'Accessory' : 'Pre-built'));
     $('p-name').textContent = p.name;
     $('p-tagline').textContent = p.tagline;
     // an empty paragraph still takes its margin, so hide it outright
@@ -658,6 +713,7 @@
     renderShot();
     renderOptions();
     renderPrice();
+    renderPlans();
     renderAddons();
     renderBuy();
     paintSeo(p);

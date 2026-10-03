@@ -487,6 +487,70 @@
       '</span></a>';
   }
 
+  /* The hero card: one machine, named in SHOPIFY_CONFIG.heroProduct.
+   *
+   * Its price, seven spec rows and two benchmark bars used to be typed into
+   * index.html. KC stopped carrying that build and the card went on selling
+   * it — the wrong chip, the wrong price, under a headline the whole page is
+   * built around. Everything but the button comes from Shopify now, and if
+   * Shopify does not answer the card stays as it starts: a kicker, a button,
+   * and no claim about a machine.
+   */
+  var HERO_SPECS = ['CPU', 'GPU', 'Cooler', 'Memory', 'Storage', 'Power', 'OS'];
+  var HERO_LABEL = { Cooler: 'Cooling' };
+
+  function fillHeroCard(products) {
+    var det = $('card-specs'), price = $('card-price'), kicker = $('card-kicker');
+    if (!det || !price) return;
+
+    var handle = SITE.heroProduct;
+    var p = handle && products.filter(function (x) { return x.id === handle; })[0];
+    if (!p) {
+      if (handle) console.warn('[hero] nothing published at "' + handle + '"');
+      return;
+    }
+
+    price.textContent = window.money(p.price);
+    // "READY TO SHIP" is only true while it is. Out of stock, the card says
+    // the name and nothing else.
+    if (kicker) {
+      kicker.textContent = p.name.toUpperCase() +
+        (p.inStock ? ' \u00b7 READY TO SHIP' : '');
+    }
+
+    var byLabel = {};
+    p.specs.forEach(function (sp) { byLabel[sp[0]] = sp[1]; });
+    var rows = HERO_SPECS.filter(function (l) { return byLabel[l]; });
+
+    // Two games, the same pair the configurator shows, scaled against the
+    // faster of the two. KC's own wording is printed, not rebuilt.
+    var top = (p.fps || []).slice(0, 2);
+    var topMax = top.reduce(function (a, r) { return Math.max(a, r.value || 0); }, 1);
+
+    det.innerHTML = '<div style="padding-top:14px">' +
+      rows.map(function (l) {
+        return '<dl class="spec spec--sm"><dt>' + (HERO_LABEL[l] || l) + '</dt>' +
+          '<dd>' + window.Shopify.esc(byLabel[l]) + '</dd></dl>';
+      }).join('') +
+      top.map(function (f, i) {
+        var w = typeof f.value === 'number' ? Math.round(f.value / topMax * 164) : 164;
+        return '<div class="bench"' + (i === 0 ? ' style="margin-top:14px"' : '') + '>' +
+          '<span class="bench__game">' + window.Shopify.esc(f.label) + '</span>' +
+          '<span class="bench__bar' + (i === 1 ? ' bench__bar--3' : '') +
+          '" style="flex:0 1 ' + w + 'px"></span>' +
+          '<span class="bench__fps">' + window.Shopify.esc(f.text) + '</span></div>';
+      }).join('') +
+      /* KC's bench_note is a full disclaimer paragraph — right under the
+       * scores on the product page, far too much for a card 268px wide. The
+       * card points at it instead of reprinting it, and says nothing at all
+       * when there is no disclaimer to point at. */
+      (top.length && p.benchNote
+        ? '<div class="hero__card-note">Estimates. <a href="product.html?id=' +
+          encodeURIComponent(p.id) + '">Full notes on the product page</a>.</div>'
+        : '') +
+    '</div>';
+  }
+
   function renderDeals(section) {
     // Heading and sub-line from the collection itself, like every other section
     if (section) {
@@ -506,10 +570,18 @@
 
   /* Collections KC has given a home_order, in the order he asked for.
    *
-   * One row of four each. The home page is a shop window rather than the shop,
-   * so a filled-up category adds a row, not twelve cards — the heading link
-   * carries the rest to the shop page, where the section is listed in full.
+   * The home page is a shop window rather than the shop, so a filled-up
+   * category adds a row or two, not twelve cards — the heading link carries
+   * the rest to the shop page, where the section is listed in full.
+   *
+   * The cap was four, one tidy row. Core Series has five machines in it and
+   * the fifth was silently becoming "See all 5 →", which is not what a
+   * section of five looks like to the person who stocked it. Eight is two
+   * full rows: enough that KC will not hit it by accident, low enough that
+   * the page stays a window.
    */
+  var HOME_CARDS = 8;
+
   function renderCollections(sections) {
     var flow = $('home-flow');
     var esc = window.Shopify.esc;
@@ -522,7 +594,7 @@
     var rows = window.Shopify.homeSections(sections);
     var holder = document.createElement('div');
     holder.innerHTML = rows.map(function (s) {
-      var shown = s.products.slice(0, 4);
+      var shown = s.products.slice(0, HOME_CARDS);
       return '<section class="section section--tight home-collection" id="home-' + esc(s.handle) + '">' +
         '<div class="section__head">' +
           (s.eyebrow ? '<span class="eyebrow">' + esc(s.eyebrow) + '</span>' : '') +
@@ -587,6 +659,7 @@
 
     $('prebuilts').hidden = false;
     window.PRODUCTS = cat.products;
+    fillHeroCard(cat.products);
     var primeSection = cat.sections.filter(function (s) { return s.handle === PRIME_HANDLE; })[0];
     primeConfig.update(
       primeSection ? primeSection.products

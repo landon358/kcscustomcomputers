@@ -86,10 +86,13 @@
 
         <div class="optgrid" id="optgrid"></div>
 
+        <!-- One free-text box, reused by whichever step asks for one: the
+             case, and "Anything else?". Its heading and hint come from the
+             category in components.js. -->
         <div id="freetext" hidden style="margin-top:22px">
-          <div class="freetext__or">Or describe the one you want</div>
+          <div class="freetext__or" id="free-label">Or describe the one you want</div>
           <textarea class="field" id="case-input" rows="4"></textarea>
-          <div style="font:500 12px var(--ui);color:var(--ink-3);margin-top:10px">Not sure? Write "recommend one" and KC will pick something that fits the parts above.</div>
+          <div id="free-hint" style="font:500 12px var(--ui);color:var(--ink-3);margin-top:10px"></div>
         </div>
 
         <div class="stepnav">
@@ -129,7 +132,7 @@
         <label><span>Your name</span><input id="f-name" type="text" placeholder="KC Fegely"></label>
         <label><span>Email</span><input id="f-email" type="email" placeholder="you@email.com"></label>
         <label><span>Phone (optional)</span><input id="f-phone" type="tel" placeholder="(248) 000-0000"></label>
-        <label><span>Anything else?</span><textarea id="f-notes" rows="3" placeholder="Games you play, budget, deadline, questions…"></textarea></label>
+        <label><span>Notes for KC</span><textarea id="f-notes" rows="3" placeholder="Games you play, budget, deadline, questions…"></textarea></label>
       </div>
 
       <button type="button" class="btn btn--lg btn--block btn--disabled" id="send" style="margin-top:20px" disabled>Send my build request</button>
@@ -167,8 +170,7 @@
         <summary>SUPPORT<i class="footer__chev"></i></summary>
         <div>
           <a href="contact.html">Contact</a>
-          <a href="index.html">Warranty &amp; returns</a>
-          <a href="index.html">Shipping</a>
+          <a href="warranty.html">Warranty &amp; protection plans</a>
         </div>
       </details>
     </div>

@@ -84,8 +84,11 @@
            hidden on a PC, which has nothing to choose. -->
       <div class="opts" id="p-opts" hidden></div>
 
-      <!-- Accessories offered with a PC, added to the cart in the same click
-           as the build. Hidden on accessories themselves. -->
+      <!-- Protection plans, then accessories. Both are offered with a PC and
+           added to the cart in the same click as the build; both are hidden on
+           a page that is not a computer. Filled by product.js from the
+           `protection` and `accessories` collections. -->
+      <div class="addons" id="p-plans" hidden></div>
       <div class="addons" id="p-addons" hidden></div>
 
       <div class="buybar">
@@ -124,7 +127,7 @@
       <p class="product__blurb" id="p-blurb"></p>
 
       <div class="badges">
-        <span class="pill pill--outline" id="p-warranty">Included 40 labor warranty</span>
+        <a class="pill pill--outline" id="p-warranty" href="warranty.html">Included 40-day warranty</a>
         <span class="pill pill--outline">Free local pickup</span>
         <span class="pill pill--outline">Insured nationwide shipping</span>
       </div>
@@ -164,8 +167,7 @@
         <summary>SUPPORT<i class="footer__chev"></i></summary>
         <div>
           <a href="contact.html">Contact</a>
-          <a href="index.html">Warranty &amp; returns</a>
-          <a href="index.html">Shipping</a>
+          <a href="warranty.html">Warranty &amp; protection plans</a>
         </div>
       </details>
     </div>

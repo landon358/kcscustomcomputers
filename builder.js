@@ -6,33 +6,40 @@
   var cats = window.CATEGORIES;
   var active = 0;
   var sel = {};        // categoryId -> optionId
-  var caseText = '';
+  var free = {};       // categoryId -> that step's typed text
 
-  // The case step offers both stocked chassis and a free-text description, so
-  // either one satisfies it. Every other step is card-only.
+  // A step with freeText takes either a card or a description, so either one
+  // satisfies it. Every other step is card-only.
   function filled(c) {
     if (sel[c.id]) return true;
-    return !!c.freeText && caseText.trim().length > 0;
+    return !!c.freeText && text(c).length > 0;
   }
+
+  function text(c) { return (free[c.id] || '').trim(); }
+
+  // "Anything else?" is the one step nobody has to answer, so it is kept out
+  // of the count, out of the progress bar and out of what unlocks the quote.
+  function needed(c) { return !c.optional; }
 
   function chosenName(c) {
     var o = chosenOpt(c);
     if (o) return o.name;
-    return c.freeText ? caseText.trim() : '';
+    return c.freeText ? text(c) : '';
   }
 
   function chosenOpt(c) {
     return (c.options || []).filter(function (x) { return x.id === sel[c.id]; })[0] || null;
   }
 
-  function complete() { return cats.every(filled); }
+  function complete() { return cats.filter(needed).every(filled); }
 
   /* --------------------------------------------------------- render ---- */
 
   function renderSummary() {
-    var done = cats.filter(filled).length;
-    $('#sum-count').textContent = done + ' of ' + cats.length;
-    $('#sum-bar').style.width = (done / cats.length * 100) + '%';
+    var req = cats.filter(needed);
+    var done = req.filter(filled).length;
+    $('#sum-count').textContent = done + ' of ' + req.length;
+    $('#sum-bar').style.width = (done / req.length * 100) + '%';
 
     $('#slots').innerHTML = cats.map(function (c, i) {
       var on = filled(c);
@@ -44,7 +51,8 @@
         '</span>' +
         '<span class="slot__text">' +
           '<span class="slot__cat">' + c.short.toUpperCase() + '</span>' +
-          '<span class="slot__name">' + (on ? chosenName(c) : 'Not chosen yet') + '</span>' +
+          '<span class="slot__name">' + (on ? chosenName(c)
+            : (c.optional ? 'Optional' : 'Not chosen yet')) + '</span>' +
         '</span>' +
         '<span class="slot__mark">' + (on ? '✓' : '') + '</span>' +
       '</button>';
@@ -72,8 +80,11 @@
 
     $('#freetext').hidden = !c.freeText;
     if (c.freeText) {
+      $('#free-label').textContent = c.freeLabel || 'Or describe the one you want';
+      $('#free-hint').textContent = c.freeHint || '';
+      $('#free-hint').hidden = !c.freeHint;
       $('#case-input').placeholder = c.placeholder || '';
-      $('#case-input').value = caseText;
+      $('#case-input').value = free[c.id] || '';
     }
 
     var opts = c.options || [];
@@ -104,6 +115,10 @@
 
   function render() { renderSummary(); renderPicker(); }
 
+  // An optional step the visitor skipped is not a line in KC's email saying
+  // "Anything else?: —". It simply is not there.
+  function listed(c) { return needed(c) || filled(c); }
+
   /* ---------------------------------------------------------- events --- */
 
   document.addEventListener('click', function (ev) {
@@ -121,7 +136,7 @@
   });
 
   $('#case-input').addEventListener('input', function (e) {
-    caseText = e.target.value;
+    free[cats[active].id] = e.target.value;
     renderSummary();
     $('#step-next').className = 'btn' + ((active < cats.length - 1 || complete()) ? ' btn--primary' : ' btn--disabled');
     $('#step-next').disabled = active === cats.length - 1 && !complete();
@@ -132,13 +147,13 @@
     if (active < cats.length - 1) { active++; render(); }
     else if (complete()) openQuote();
   });
-  $('#reset').addEventListener('click', function () { sel = {}; caseText = ''; active = 0; render(); });
+  $('#reset').addEventListener('click', function () { sel = {}; free = {}; active = 0; render(); });
 
   /* ----------------------------------------------------------- quote --- */
 
   function openQuote() {
     if (!complete()) return;
-    $('#bom').innerHTML = cats.map(function (c) {
+    $('#bom').innerHTML = cats.filter(listed).map(function (c) {
       return '<dl class="spec"><dt>' + c.short.toUpperCase() + '</dt><dd>' + (chosenName(c) || '—') + '</dd></dl>';
     }).join('');
     $('#quote-form').hidden = false;
@@ -177,7 +192,7 @@
    * is set up under Forms → Form notifications in the Netlify dashboard.
    */
   function buildList() {
-    return cats.map(function (c) {
+    return cats.filter(listed).map(function (c) {
       return c.label + ': ' + (chosenName(c) || '—');
     }).join('\n');
   }

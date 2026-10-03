@@ -32,9 +32,13 @@ window.SHOPIFY_CONFIG = {
    * dragging products around in Admin reorders the site.
    */
   collections: {
-    prime:     'pre-builts',   // "AMD Prime"       -> shop grid + home configurator
-    deal:      'my-pcs',       // "One Time Deals"  -> the one-time deals row
-    accessory: 'accessories'   // "Accessories"     -> accessory cards + add-ons
+    prime:      'pre-builts',   // "AMD Prime"       -> shop grid + home configurator
+    deal:       'my-pcs',       // "One Time Deals"  -> the one-time deals row
+    accessory:  'accessories',  // "Accessories"     -> accessory cards + add-ons
+    // Protection plans. Everything in here is offered on a machine's product
+    // page and in the popup on the way to checkout, and nowhere else — not in
+    // the shop, not as an accessory add-on. One product per tier.
+    protection: 'protection'
   },
 
   /* Every OTHER collection in the store becomes a section of its own, so a
@@ -47,6 +51,19 @@ window.SHOPIFY_CONFIG = {
    * deleting the collection.
    */
   hiddenCollections: ['frontpage'],
+
+  /* The machine in the hero card, by handle.
+   *
+   * Its price, specs and benchmark bars fill the card beside the video. The
+   * card used to carry one build's numbers typed into index.html, which went
+   * on selling a machine KC had stopped carrying. Change the handle here and
+   * the card changes; blank it and the card shows its kicker and button only.
+   *
+   * Nothing else on the page depends on this, so it can be any published
+   * product — but the button under it says "Shop the Summit Series", so a
+   * Summit is the one that reads right.
+   */
+  heroProduct: 'beginner-build',   // Summit Stride
 
   /* Collections shown on the HOME page as a configurator — the chips, photo,
    * parts, benchmarks and price block — instead of a row of cards. Each one
@@ -87,6 +104,29 @@ window.SHOPIFY_CONFIG = {
    * in Shopify, and nothing is claimed on his behalf here.
    */
   protectionPlanHandle: '',
+
+  /* ---------------------------------------------------------------------
+   * Adding a protection plan
+   *
+   * 1. Create the product, one per tier, and price it the way it is sold.
+   * 2. Put it in the collection above (`protection`) and nothing else. A plan
+   *    filed under Accessories is offered beside the GPU stands and listed in
+   *    the shop as something to browse; in `protection` it appears only where
+   *    a plan belongs — on a machine's product page and in the popup on the
+   *    way to checkout.
+   * 3. Give it the `best_for` metafield, namespace `specs`, with "Storefront
+   *    access" ticked: one line saying what this tier is, which is what tells
+   *    the two tiers apart in the popup. Without it the card shows the name
+   *    and the price only.
+   * 4. The product description is shown in full on the plan's own product
+   *    page, so write it for a buyer. It is never cut down for a card.
+   * 5. Turn OFF inventory tracking, or set it to keep selling when it hits
+   *    zero. A plan is not a thing on a shelf — with quantity 1 it stops
+   *    being offered the moment somebody buys one.
+   *
+   * Monthly billing needs a Shopify subscription app; a plain product can
+   * only charge once. Until one is installed, publish the prepaid price.
+   * ------------------------------------------------------------------- */
 
   /* ---------------------------------------------------------------------
    * Adding a product without touching this repo

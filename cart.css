@@ -207,6 +207,38 @@
   text-wrap: pretty;
 }
 .plan__card .btn { margin-top: 22px; }
+
+/* Step two holds two tiers side by side, so it needs more room than the
+   question did. */
+.plan__card--wide { max-width: 640px; }
+.plan__tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+  text-align: left;
+}
+.plan__tier {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 18px 18px 18px;
+  background: var(--plate);
+}
+.plan__tier-name { margin: 0; font: 700 17px/1.25 var(--display); letter-spacing: -0.02em; }
+.plan__tier-price { margin: 8px 0 18px; font: 700 22px var(--display); letter-spacing: -0.025em; }
+.plan__tier-copy {
+  margin: 10px 0 18px;
+  font: 400 13.5px/1.55 var(--ui);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+/* auto, not a fixed gap: the two buttons then line up with each other however
+   long the descriptions above them run. */
+.plan__tier .btn { margin-top: auto; }
+.plan__terms { margin: 18px 0 0; font: 500 13px var(--ui); }
+.plan__terms a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
 .plan__skip {
   display: block;
   width: 100%;

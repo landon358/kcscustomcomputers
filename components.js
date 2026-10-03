@@ -84,10 +84,26 @@ window.CATEGORIES = [
     id: 'case', label: 'Case', short: 'Case', freeText: true,
     blurb: "Pick one of the chassis we stock, or describe the look you want and we'll confirm it fits your parts.",
     placeholder: 'e.g. white mid tower with a glass side panel, or a specific model you have in mind',
+    freeLabel: 'Or describe the one you want',
+    freeHint: 'Not sure? Write "recommend one" and KC will pick something that fits the parts above.',
     options: [
       { id: 'case-black-rgb',  name: 'Lian Li Vector V100',       note: 'Mid tower · 4 × ARGB fans · glass side', img: P + 'case-black-rgb-tower.png' },
       { id: 'case-black-pano', name: 'Montech XR ATX Mid Tower',  note: 'Panoramic glass · 3 × ARGB fans',        img: P + 'case-black-panoramic.png' },
       { id: 'case-white-pano', name: 'Lian Li Vector V100 White', note: 'Mid tower · 4 × ARGB fans · front USB-C', img: P + 'case-white-panoramic.png' }
     ]
+  },
+  /* The one step nobody has to answer. It exists because the six above are
+   * only the parts KC stocks as options — everything else a build might want,
+   * and anything he has not thought to list, has to land somewhere. Marked
+   * `optional`, so it stays out of the progress count and never blocks the
+   * quote button. */
+  {
+    id: 'extras', label: 'Anything else?', short: 'Extras',
+    freeText: true, optional: true,
+    blurb: 'Anything you want in the build that is not above — and anything we have not thought to ask.',
+    placeholder: 'e.g. extra case fans, a capture card, wifi, a second monitor, a keyboard and mouse, or moving the parts out of your current PC',
+    freeLabel: 'Tell us what else to add',
+    freeHint: 'Nothing to add? Leave it empty and carry on to the quote.',
+    options: []
   }
 ];

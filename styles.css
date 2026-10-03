@@ -203,6 +203,9 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   padding: 8px 15px;
 }
 
+/* The warranty badge is the one pill that goes somewhere. */
+a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
+
 /* --------------------------------------------------------------- hero --- */
 
 .hero { position: relative; height: 420vh; }
@@ -292,6 +295,8 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
   color: var(--ink-4);
   margin-top: 10px;
 }
+.hero__card-note a { color: var(--ink-3); text-decoration: underline; text-underline-offset: 2px; }
+.hero__card-note a:hover { color: var(--blue); }
 
 /* Sits under both clip layers, matched to the frame the hero opens on, so a
    stage that never gets a video is still the photograph rather than nothing.
@@ -1148,9 +1153,154 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
 }
 .policy__status a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
 
+/* ----------------------------------------------- warranty & plans ------- */
+
+/* The two short blocks above the contracts. Same measure as .policy so the
+   whole page reads as one column. */
+.legal__intro { max-width: 720px; font: 400 16.5px/1.7 var(--ui); color: var(--ink-2); }
+.legal__intro p { margin: 0 0 14px; }
+.legal__intro b { font-weight: 600; color: var(--ink); }
+
+.legal__note {
+  max-width: 720px;
+  margin: 22px 0 0;
+  font: 400 14.5px/1.65 var(--ui);
+  color: var(--ink-3);
+}
+.legal__note a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
+
+/* The numbers a buyer needs before they read 54 numbered clauses. */
+.facts {
+  list-style: none;
+  margin: 26px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.facts--plain { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 28px; }
+.fact { padding: 18px 20px; background: var(--surface); }
+.fact span {
+  display: block;
+  margin-top: 5px;
+  font: 400 14px/1.55 var(--ui);
+  color: var(--ink-2);
+}
+.fact__n {
+  font: 700 19px/1.2 var(--display);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* Plus and Premium, side by side. Two cards, not a feature matrix — Premium
+   is Plus plus four lines, so a matrix would be nine rows of two ticks. */
+.tiers {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+.tier {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  padding: 24px 24px 26px;
+}
+.tier--featured { border-color: var(--blue-border); box-shadow: 0 1px 0 var(--blue-tint) inset; }
+.tier__head h3 {
+  margin: 0;
+  font: 700 clamp(19px, 2vw, 23px)/1.2 var(--display);
+}
+.tier__tag {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--blue-tint);
+  font: 600 11px var(--ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+.tier__price { margin: 14px 0 0; display: flex; align-items: baseline; gap: 7px; }
+.tier__price b { font: 700 30px/1 var(--display); letter-spacing: -0.03em; }
+.tier__price span { font: 500 13.5px var(--ui); color: var(--ink-3); }
+.tier__alt { margin: 6px 0 0; font: 400 14px/1.5 var(--ui); color: var(--ink-2); }
+.tier__alt b { font-weight: 600; color: var(--ink); }
+.tier__also {
+  margin: 20px 0 0;
+  font: 600 13px var(--ui);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+.tier__list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  font: 400 15px/1.55 var(--ui);
+  color: var(--ink-2);
+}
+.tier__list li { position: relative; padding: 0 0 10px 24px; }
+.tier__list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  width: 11px;
+  height: 6px;
+  border: solid var(--blue);
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg);
+}
+
+/* The contracts themselves: .policy sets the type, .legal adds the numbering
+   and the section index. */
+.legal { margin-top: 30px; }
+.legal__title {
+  margin: 0 0 4px;
+  font: 700 clamp(19px, 2vw, 24px)/1.25 var(--display);
+  letter-spacing: -0.025em;
+}
+.legal__lead { margin: 14px 0 6px; }
+.legal__toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 16px 0 4px;
+  border-bottom: 1px solid var(--line);
+}
+.legal__toc a {
+  font: 500 13px var(--ui);
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.legal__toc a:hover { color: var(--blue); }
+.legal h3 {
+  margin: 34px 0 12px;
+  font: 700 17px/1.3 var(--display);
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  scroll-margin-top: calc(var(--nav-h) + 16px);
+}
+.legal__sub {
+  margin: 20px 0 8px;
+  font: 600 15px/1.4 var(--ui);
+  color: var(--ink);
+}
+/* Clause numbers, held in their own colour so the prose still reads as prose. */
+.legal__n { font-weight: 600; color: var(--ink-3); }
+.legal__list { margin: 0 0 16px; padding-left: 26px; }
+.legal__list li { margin-bottom: 7px; }
+
 /* ------------------------------------------------------------- mobile --- */
 
 @media (max-width: 1080px) {
+  .facts--plain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .grid--4, .related { grid-template-columns: repeat(2, 1fr); }
   .steps { grid-template-columns: repeat(2, 1fr); }
 }
@@ -1213,6 +1363,9 @@ h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.03em; }
      spec values and the button lost their right edge — 4px of it at $2,500. */
   .config { grid-template-columns: minmax(0, 1fr); }
   .config__panel { border-left: none; border-top: 1px solid var(--line-3); padding: 24px 22px; }
+
+  .tiers { grid-template-columns: 1fr; }
+  .facts, .facts--plain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .grid--3, .grid--4, .product, .related { grid-template-columns: 1fr; }
   .product { gap: 28px; }

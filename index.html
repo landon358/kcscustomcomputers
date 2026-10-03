@@ -155,25 +155,17 @@
       <div class="co-label" style="left:66%; top:84%"><b>PSU</b></div>
     </div>
 
+    <!-- The card used to hard-code one machine's price, specs and benchmark
+         bars. KC stopped carrying that machine and the card went on selling
+         it. Everything below the kicker is filled by home.js from the product
+         named in SHOPIFY_CONFIG.heroProduct, and shows nothing until Shopify
+         answers — the same rule as the rest of the page. -->
     <div class="hero__card" id="hero-card">
-      <div class="hero__card-kicker">SUMMIT SERIES &middot; READY TO SHIP</div>
+      <div class="hero__card-kicker" id="card-kicker">SUMMIT SERIES &middot; READY TO SHIP</div>
       <div class="hero__card-price">
-        <b>From $1,300</b>
+        <b id="card-price"></b>
       </div>
-      <div class="hero__card-specs" id="card-specs">
-        <div style="padding-top:14px">
-          <dl class="spec spec--sm"><dt>CPU</dt><dd>Ryzen 7 7700X &middot; 8C/16T</dd></dl>
-          <dl class="spec spec--sm"><dt>GPU</dt><dd>RTX 5070 12GB</dd></dl>
-          <dl class="spec spec--sm"><dt>Cooling</dt><dd>360mm AIO</dd></dl>
-          <dl class="spec spec--sm"><dt>Memory</dt><dd>32GB DDR5-6000</dd></dl>
-          <dl class="spec spec--sm"><dt>Storage</dt><dd>1TB NVMe SSD</dd></dl>
-          <dl class="spec spec--sm"><dt>Power</dt><dd>850W 80+ Gold</dd></dl>
-          <dl class="spec spec--sm"><dt>OS</dt><dd>Windows 11 Pro</dd></dl>
-          <div class="bench" style="margin-top:14px"><span class="bench__game">Fortnite</span><span class="bench__bar" style="flex:0 1 118px"></span><span class="bench__fps">215 fps</span></div>
-          <div class="bench"><span class="bench__game">CS2</span><span class="bench__bar bench__bar--3" style="flex:0 1 164px"></span><span class="bench__fps">300 fps</span></div>
-          <div class="hero__card-note">1080p averages measured on the bench.</div>
-        </div>
-      </div>
+      <div class="hero__card-specs" id="card-specs"></div>
       <a class="btn btn--primary btn--block" style="height:46px;margin-top:14px" href="shop.html">Shop the Summit Series</a>
       <div class="hero__card-foot">Local pickup in 24h &middot; ships nationwide</div>
     </div>
@@ -280,8 +272,7 @@
         <summary>SUPPORT<i class="footer__chev"></i></summary>
         <div>
           <a href="contact.html">Contact</a>
-          <a href="index.html">Warranty &amp; returns</a>
-          <a href="index.html">Shipping</a>
+          <a href="warranty.html">Warranty &amp; protection plans</a>
         </div>
       </details>
     </div>

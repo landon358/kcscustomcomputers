@@ -206,34 +206,62 @@
 
   /* ------------------------------------------------- protection plan ---- */
 
-  /* Offered once, on the way to checkout, when KC has a protection plan
-   * published and it is not already in the cart. Resolves true to carry on to
-   * checkout, false if the shopper closed the offer without choosing.
+  /* The gate on the way to checkout.
    *
-   * Everything shown comes from the product in Shopify — its name, its own
-   * description and its price — so what the plan covers is only ever what KC
-   * wrote, never wording invented here.
+   * Checkout no longer leaves for Shopify on its own. It opens this, and the
+   * only way through is a choice: add a plan, or "No thanks". Closing it
+   * (Escape, or the backdrop) is neither — that leaves the shopper in their
+   * cart rather than quietly sending them to pay.
+   *
+   * Two steps, the way KC described it. The first asks. The second shows the
+   * tiers, because "which one" is a different question from "do you want one"
+   * and asking both at once is how people answer neither.
+   *
+   * Skipped entirely when a plan is already in the cart. Someone who added
+   * one on the product page has answered; asking again is nagging a customer
+   * for agreeing with you.
+   *
+   * Every word about a plan — its name, its description, its price — comes
+   * from the product in Shopify. Nothing about what is covered is written
+   * here, because nothing here would be KC's to promise.
    */
-  var PLAN_DISMISSED = 'kcc_plan_offered';
 
-  function findPlan() {
-    var cfg = window.SHOPIFY_CONFIG || {};
-    var handle = cfg.protectionPlanHandle || '';
-    return (window.PRODUCTS || []).filter(function (p) {
+  function findPlans() {
+    var all = window.PRODUCTS || [];
+    // The protection collection is the real answer.
+    var listed = (window.Shopify && window.Shopify.plans)
+      ? window.Shopify.plans(all) : [];
+    if (listed.length) return listed;
+
+    /* Nothing there: fall back on the handle, then on the name.
+     *
+     * KC filed his first plan under Accessories, and a plan that is published
+     * and sellable should be offered whichever collection he put it in. This
+     * is what keeps that working until it is moved. */
+    var handle = (window.SHOPIFY_CONFIG || {}).protectionPlanHandle || '';
+    return all.filter(function (p) {
       if (!p.inStock) return false;
       return handle ? p.id === handle || p.handle === handle
                     : /protection plan/i.test(p.name || '');
-    })[0] || null;
+    });
   }
 
-  function planInCart(plan) {
+  function sellable(plan) {
+    return (plan.variants || []).filter(function (v) { return v.available; })[0] || null;
+  }
+
+  function planInCart(plans) {
     var cart = window.Cart.get();
     if (!cart) return false;
-    return cart.lines.some(function (l) { return l.handle === plan.handle || l.handle === plan.id; });
+    return plans.some(function (plan) {
+      return cart.lines.some(function (l) {
+        return l.handle === plan.handle || l.handle === plan.id;
+      });
+    });
   }
 
   // The drawer opens on pages that never load the catalogue (contact, thanks),
-  // so make sure it is there before looking for the plan. loadCatalogue is
+  // so make sure it is there before looking for the plans. loadCatalogue is
   // memoised, so this costs nothing on a page that already has it.
   function withCatalogue() {
     if ((window.PRODUCTS || []).length || !window.Shopify || !window.Shopify.configured) {
@@ -249,15 +277,11 @@
   }
 
   function showOffer() {
-    var plan = findPlan();
     var cart = window.Cart.get();
-    var already = false;
-    try { already = sessionStorage.getItem(PLAN_DISMISSED) === '1'; } catch (err) { /* private mode */ }
+    var plans = findPlans().filter(sellable);
 
-    if (!plan || !cart || already || planInCart(plan)) return Promise.resolve(true);
-
-    var variant = (plan.variants || []).filter(function (v) { return v.available; })[0];
-    if (!variant) return Promise.resolve(true);
+    // Nothing to offer, or they already have one: checkout as it always was.
+    if (!cart || !plans.length || planInCart(plans)) return Promise.resolve(true);
 
     return new Promise(function (resolve) {
       var wrap = document.createElement('div');
@@ -265,46 +289,105 @@
       wrap.setAttribute('role', 'dialog');
       wrap.setAttribute('aria-modal', 'true');
       wrap.setAttribute('aria-labelledby', 'plan-title');
-      wrap.innerHTML =
-        '<div class="plan__card">' +
-          '<h2 class="plan__title" id="plan-title">Protect your purchase</h2>' +
-          '<p class="plan__name">' + esc(plan.name) + ' &middot; ' + money(variant.price, cart.currency) + '</p>' +
-          (plan.blurb ? '<p class="plan__copy">' + esc(plan.blurb) + '</p>' : '') +
-          '<button type="button" class="btn btn--primary btn--lg btn--block" id="plan-add">' +
-            'Add for ' + money(variant.price, cart.currency) + '</button>' +
-          '<button type="button" class="plan__skip" id="plan-skip">No thanks, continue to checkout</button>' +
-        '</div>';
       document.body.appendChild(wrap);
-      document.getElementById('plan-add').focus();
 
-      function finish(addIt) {
-        try { sessionStorage.setItem(PLAN_DISMISSED, '1'); } catch (err) { /* private mode */ }
-        if (!addIt) { wrap.remove(); resolve(true); return; }
+      function skipRow(label) {
+        return '<button type="button" class="plan__skip" id="plan-skip">' + label + '</button>';
+      }
 
-        var add = document.getElementById('plan-add');
-        add.disabled = true;
-        add.textContent = 'Adding…';
-        window.Cart.addLines([{ merchandiseId: variant.id, quantity: 1 }])
-          .then(function () { wrap.remove(); resolve(true); })
+      /* Step one: the question. */
+      function ask() {
+        wrap.innerHTML =
+          '<div class="plan__card">' +
+            '<h2 class="plan__title" id="plan-title">Protect your purchase</h2>' +
+            '<p class="plan__copy">A protection plan covers the care around your ' +
+              'machine — priority service, diagnostics and labor — for as long as ' +
+              'you keep it.</p>' +
+            '<button type="button" class="btn btn--primary btn--lg btn--block" id="plan-yes">' +
+              'Add a protection plan</button>' +
+            skipRow('No thanks') +
+          '</div>';
+        document.getElementById('plan-yes').focus();
+        document.getElementById('plan-yes').addEventListener('click', choose);
+        document.getElementById('plan-skip').addEventListener('click', function () { leave(); });
+      }
+
+      /* Step two: which one. */
+      function choose() {
+        wrap.innerHTML =
+          '<div class="plan__card plan__card--wide">' +
+            '<h2 class="plan__title" id="plan-title">Choose your plan</h2>' +
+            '<div class="plan__tiers">' +
+              plans.map(function (plan, i) {
+                var v = sellable(plan);
+                /* The one line that tells the tiers apart, from the plan's
+                 * `best_for` metafield — KC's words, the same field every
+                 * machine uses for its tagline.
+                 *
+                 * Not the Shopify description: that is the whole agreement,
+                 * and it arrives as one flat string with its own heading
+                 * folded into the first sentence, so any attempt to cut it to
+                 * card length reads as a stutter of the name above it. The
+                 * full text is one click away under the tiers. */
+                var line = plan.tagline || '';
+                return '<div class="plan__tier">' +
+                  '<h3 class="plan__tier-name">' + esc(plan.name) + '</h3>' +
+                  '<p class="plan__tier-price">' + money(v.price, cart.currency) + '</p>' +
+                  (line ? '<p class="plan__tier-copy">' + esc(line) + '</p>' : '') +
+                  '<button type="button" class="btn btn--primary btn--block" ' +
+                    'data-pick="' + i + '">Add this plan</button>' +
+                '</div>';
+              }).join('') +
+            '</div>' +
+            '<p class="plan__terms"><a href="warranty.html">What each plan covers, in full</a></p>' +
+            skipRow('No thanks, continue to checkout') +
+          '</div>';
+        var first = wrap.querySelector('[data-pick]');
+        if (first) first.focus();
+        wrap.querySelectorAll('[data-pick]').forEach(function (b) {
+          b.addEventListener('click', function () { add(plans[Number(b.getAttribute('data-pick'))], b); });
+        });
+        document.getElementById('plan-skip').addEventListener('click', function () { leave(); });
+      }
+
+      function add(plan, btn) {
+        var v = sellable(plan);
+        wrap.querySelectorAll('[data-pick]').forEach(function (b) { b.disabled = true; });
+        btn.textContent = 'Adding…';
+        window.Cart.addLines([{ merchandiseId: v.id, quantity: 1 }])
+          .then(function () { leave(); })
           .catch(function (err) {
             console.error('[plan]', err.message);
-            add.disabled = false;
-            add.textContent = 'Could not add — continue to checkout';
-            add.onclick = function () { wrap.remove(); resolve(true); };
+            // The plan could not be added. Say so, and do not hold the
+            // checkout hostage over it.
+            wrap.querySelectorAll('[data-pick]').forEach(function (b) { b.disabled = false; });
+            btn.textContent = 'Could not add — continue to checkout';
+            btn.onclick = function () { leave(); };
           });
       }
 
-      document.getElementById('plan-add').addEventListener('click', function () { finish(true); });
-      document.getElementById('plan-skip').addEventListener('click', function () { finish(false); });
-      wrap.addEventListener('click', function (e) {
-        // closing without choosing leaves them in the cart, not at checkout
-        if (e.target === wrap) { wrap.remove(); resolve(false); }
-      });
-      document.addEventListener('keydown', function onKey(e) {
-        if (e.key !== 'Escape') return;
+      // Carry on to Shopify.
+      function leave() {
+        close();
+        resolve(true);
+      }
+
+      // Closed without answering: back to the cart, not to the payment page.
+      function dismiss() {
+        close();
+        resolve(false);
+      }
+
+      function close() {
         document.removeEventListener('keydown', onKey);
-        if (wrap.parentNode) { wrap.remove(); resolve(false); }
-      });
+        if (wrap.parentNode) wrap.remove();
+      }
+
+      function onKey(e) { if (e.key === 'Escape') dismiss(); }
+
+      wrap.addEventListener('click', function (e) { if (e.target === wrap) dismiss(); });
+      document.addEventListener('keydown', onKey);
+      ask();
     });
   }
 

@@ -339,7 +339,9 @@
       // stand has no spec table for the description to repeat, so there it is
       // the only prose there is and it is shown.
       blurb: meta.blurb ||
-        (section === 'accessory' || tags.indexOf('accessory') !== -1
+        // A plan's description is the same case as an accessory's: there is no
+        // spec table for it to repeat, and what it covers is the whole point.
+        (section === 'accessory' || section === 'plan' || tags.indexOf('accessory') !== -1
           ? String(node.description || '').trim() : ''),
       specs: metaSpecs,
       fps: fps.fps,
@@ -420,6 +422,7 @@
     var kindOf = function (h) {
       if (h === C.prime) return 'prime';
       if (h === C.deal) return 'deal';
+      if (h === C.protection) return 'plan';
       if (h === C.accessory) return 'accessory';
       return h;
     };
@@ -434,7 +437,11 @@
     // Accessories rank ahead of KC's own collections for the same reason: a
     // stand he also files under "New this month" is still a stand, and has to
     // render with the accessory card and the accessory product page.
-    var RANK = { prime: 0, deal: 1, accessory: 2 };
+    // Protection plans rank ahead of accessories for the same reason, and
+    // more sharply: KC filed the first one under Accessories, where it was
+    // being offered as an add-on beside the GPU stands and listed in the shop
+    // as something to browse. A plan is neither.
+    var RANK = { prime: 0, deal: 1, plan: 2, accessory: 3 };
     var rank = function (col) {
       var r = RANK[kindOf(col.handle)];
       return r === undefined ? 3 : r;
@@ -453,6 +460,10 @@
 
       col.products.nodes.forEach(function (n) {
         var id = n.handle;
+        // A plan belongs to its own collection and nowhere else. Listing it
+        // again under whatever else KC filed it in would put a service
+        // agreement in a row of computers.
+        if (seen[id] && seen[id].kind === 'plan' && kind !== 'plan') return;
         if (!seen[id]) {
           seen[id] = normalise(n, kind);
           // The collection that claimed it, named the way KC named it. The
@@ -479,7 +490,7 @@
         // generic renderers skip them or the page would show them twice.
         // Accessories are deliberately NOT reserved: they are an ordinary
         // section KC places with shop_order, whose cards happen to differ.
-        reserved: kind === 'prime' || kind === 'deal',
+        reserved: kind === 'prime' || kind === 'deal' || kind === 'plan',
         kind: kind,
         products: ladder(members)
       });
@@ -526,6 +537,19 @@
         picked.slice(cap).map(function (s) { return s.title; }).join(', '));
     }
     return picked.slice(0, cap);
+  }
+
+  /* The protection plans KC has published, cheapest first.
+   *
+   * They come from one collection — SHOPIFY_CONFIG.collections.protection —
+   * so adding a second tier is a Shopify job, not a code change. An empty or
+   * missing collection returns nothing, and every place that offers a plan
+   * simply does not appear.
+   */
+  function plans(products) {
+    return (products || []).filter(function (p) {
+      return p.kind === 'plan' && p.inStock;
+    });
   }
 
   /* Order page blocks by KC's numbers — shop_order on the shop page,
@@ -805,6 +829,7 @@
     shopSections: shopSections,
     homeSections: homeSections,
     byOrder: byOrder,
+    plans: plans,
     loadBestSellers: loadBestSellers,
     unavailableHtml: unavailableHtml,
     esc: esc,
