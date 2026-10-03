@@ -30,6 +30,13 @@
   // Neither one is a computer, so neither gets a spec table, benchmark tabs,
   // a warranty badge or add-ons of its own.
   var notAPc = function (x) { return isAccessory(x) || isPlan(x); };
+  // Which of the three things a product is. "Related" has to match on this
+  // rather than on "is it an accessory": a plan is not an accessory, which
+  // meant it counted as a machine and both plans were turning up under "Also
+  // on the bench" on every PC's page.
+  var group = function (x) {
+    return isPlan(x) ? 'plan' : (isAccessory(x) ? 'accessory' : 'pc');
+  };
 
   /* -------------------------------------------------------- gallery ---- */
 
@@ -697,14 +704,17 @@
     if (acc) $('p-scores').hidden = true;
     else renderBench(p);
 
-    // Related stays within its kind: other machines under a machine, other
-    // accessories under an accessory. Mixed, the cheapest stand would lead
-    // "Also on the bench" under every $2,000 build, since the list runs
-    // cheapest first.
+    // Related stays within its kind: machines under a machine, accessories
+    // under an accessory, the other tier under a plan. Mixed, the cheapest
+    // stand would lead "Also on the bench" under every $2,000 build, since
+    // the list runs cheapest first.
+    var mine = group(p);
     var related = window.PRODUCTS.filter(function (x) {
-      return x.id !== p.id && isAccessory(x) === acc;
+      return x.id !== p.id && group(x) === mine;
     }).slice(0, 4);
-    $('p-related-label').textContent = acc ? 'More accessories' : 'Also on the bench';
+    $('p-related-label').textContent = mine === 'accessory' ? 'More accessories'
+      : (mine !== 'plan' ? 'Also on the bench'
+        : (related.length === 1 ? 'The other plan' : 'Other protection plans'));
     $('p-related').closest('section').hidden = !related.length;
 
     $('p-related').innerHTML = related
