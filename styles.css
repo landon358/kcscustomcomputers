@@ -926,7 +926,7 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
 
 /* Accessories offered on a PC's page, above the button that adds them. */
 .addons {
-  margin-top: 24px;
+  margin-top: 18px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface);
@@ -937,7 +937,7 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 13px 18px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--line-3);
 }
 .addons__head a { font: 600 12.5px var(--ui); color: var(--blue); }
@@ -945,10 +945,10 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
 
 .addon {
   display: grid;
-  grid-template-columns: auto 56px minmax(0, 1fr) auto;
+  grid-template-columns: auto 40px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
-  padding: 12px 18px;
+  gap: 12px;
+  padding: 9px 16px;
   transition: background .15s ease;
 }
 .addon + .addon { border-top: 1px solid var(--line-3); }
@@ -981,8 +981,8 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
 .addon__pick input:checked + .addon__box::after { opacity: 1; }
 .addon__pick input:focus-visible + .addon__box { outline: 2px solid var(--blue); outline-offset: 2px; }
 .addon__shot {
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--r-sm);
   border: 1px solid var(--line);
   background: var(--plate);
@@ -1001,11 +1001,38 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
   max-width: 100%;
 }
 .addon__price {
-  font: 600 14px var(--ui);
+  font: 600 13.5px var(--ui);
   color: var(--ink-2);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+/* The protection plans, directly above the accessories.
+ *
+ * Both blocks were the same shape, the same size and the same colour, one on
+ * top of the other, and between them they owned the buy column — the price
+ * and the button were pushed off the screen on a laptop. This one is the
+ * quieter of the two: no photograph, one line a row, and a tint so the eye
+ * reads two blocks rather than one list of four.
+ */
+.addons--plans {
+  background: #F8FAFF;
+  border-color: var(--blue-border);
+}
+.addons--plans .addons__head { padding: 8px 14px; border-bottom-color: var(--blue-border); }
+.addons--plans .block__label { font-size: 10px; letter-spacing: 0.14em; }
+.addons--plans .addons__head a { font-size: 11.5px; }
+.addons--plans .addon {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 7px 14px;
+}
+.addons--plans .addon + .addon { border-top-color: var(--blue-border); }
+.addons--plans .addon.is-on { background: var(--blue-tint); }
+.addons--plans .addon__box { width: 18px; height: 18px; border-radius: 6px; }
+.addons--plans .addon__box::after { width: 5px; height: 9px; }
+.addons--plans .addon__name { font: 600 13px/1.3 var(--ui); }
+.addons--plans .addon__price { font-size: 13px; }
 
 /* Accessory card: the deal card's shape, with the colours it comes in. */
 /* KC's accessory shots are photographs on a desk, not cut-outs on white, so
@@ -1408,6 +1435,20 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
   .addon__shot  { grid-area: shot; width: 46px; height: 46px; }
   .addon__body  { grid-area: body; }
   .addon__price { grid-area: price; font-size: 13px; }
+
+  /* A plan's row carries no photograph and no colour buttons, so it still
+     fits on one line at this width. Without this it inherits the two-row
+     layout above and reserves a 46px column for a picture that is not
+     there. */
+  .addons--plans .addon {
+    grid-template-areas: none;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    row-gap: 0;
+    padding: 8px 14px;
+  }
+  .addons--plans .addon__box,
+  .addons--plans .addon__body,
+  .addons--plans .addon__price { grid-area: auto; }
   .optval--sm   { padding: 8px 12px 8px 9px; }
   /* Room for the price beside the button on a 360px phone: a tighter gap, a
      slightly smaller price and less side padding on the button. On anything

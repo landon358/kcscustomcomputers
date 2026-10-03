@@ -311,7 +311,24 @@
     return addons[x.id];
   }
 
-  function addonRow(x) {
+  /* The name as the plans block shows it.
+   *
+   * KC's products are called "PC Protection Plan - Plus 3-Year" and "PC
+   * Protection Plan - Premium 3 Year". Under a heading that already reads
+   * PROTECT YOUR PURCHASE, the first four words are the same on both rows and
+   * wrap to four lines in the buy column, which is how two plans came to own
+   * the page. What is left is the part that differs. Everywhere else — the
+   * cart, the plan's own page, the checkout popup — keeps his full name.
+   */
+  function planLabel(name) {
+    var short = String(name || '').replace(/^\s*(pc\s+)?protection\s+plan\s*[-–—:]?\s*/i, '');
+    return short || name;
+  }
+
+  /* One row. `slim` drops the photograph: a protection plan's picture is a
+   * stock shield that says the same thing twice, and the two blocks sitting
+   * one above the other were reading as one long identical list. */
+  function addonRow(x, slim) {
     var st = addonState(x);
     var v = variantOf(x, st.variant);
     var opts = x.options || [];
@@ -345,11 +362,13 @@
         '<input type="checkbox" data-addon-toggle="' + esc(x.id) + '"' + (st.on ? ' checked' : '') + '>' +
         '<span class="addon__box" aria-hidden="true"></span>' +
         '<span class="sr">Add ' + esc(x.name) + ' to this build</span>' +
-        (img ? '<img class="addon__shot" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">'
-             : '<span class="addon__shot"></span>') +
+        (slim ? ''
+          : (img ? '<img class="addon__shot" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">'
+                 : '<span class="addon__shot"></span>')) +
       '</label>' +
       '<div class="addon__body">' +
-        '<a class="addon__name" href="product.html?id=' + encodeURIComponent(x.id) + '">' + esc(x.name) + '</a>' +
+        '<a class="addon__name" href="product.html?id=' + encodeURIComponent(x.id) + '">' +
+          esc(slim ? planLabel(x.name) : x.name) + '</a>' +
         picker +
       '</div>' +
       '<span class="addon__price">+' + window.money(v ? v.price : x.price) + '</span>' +
@@ -371,7 +390,12 @@
             ? '<a href="shop.html#collection-' + esc(ACCESSORY_HANDLE) + '">All ' + list.total + ' accessories &rarr;</a>'
             : '') +
         '</div>' +
-        '<ul class="addons__list">' + list.shown.map(addonRow).join('') + '</ul>';
+        // Not map(addonRow): map hands the callback the index too, which
+        // would arrive as `slim` and strip the photo off every row but the
+        // first.
+        '<ul class="addons__list">' +
+          list.shown.map(function (x) { return addonRow(x); }).join('') +
+        '</ul>';
     });
   }
 
@@ -395,7 +419,9 @@
           '<span class="block__label">PROTECT YOUR PURCHASE</span>' +
           '<a href="warranty.html">What is covered &rarr;</a>' +
         '</div>' +
-        '<ul class="addons__list">' + list.map(addonRow).join('') + '</ul>';
+        '<ul class="addons__list">' +
+          list.map(function (x) { return addonRow(x, true); }).join('') +
+        '</ul>';
     });
   }
 
