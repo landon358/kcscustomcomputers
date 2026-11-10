@@ -92,19 +92,6 @@ window.SHOPIFY_CONFIG = {
    */
   homeMaxSections: 3,
 
-  /* The protection plan offered on the way to checkout.
-   *
-   * Leave blank and the site looks for a published product whose name contains
-   * "protection plan". Set a handle to name one exactly. If no such product is
-   * published, or it is out of stock, the offer simply never appears and
-   * Checkout behaves as it always has.
-   *
-   * Everything in that popup comes from the product itself — its name, its
-   * description and its price — so what the plan covers is whatever KC wrote
-   * in Shopify, and nothing is claimed on his behalf here.
-   */
-  protectionPlanHandle: '',
-
   /* ---------------------------------------------------------------------
    * Adding a protection plan
    *

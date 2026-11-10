@@ -206,6 +206,10 @@
    * Accessories are in here too: someone sorting by price is looking across
    * everything KC sells, and leaving them out of only some orderings would be
    * its own kind of surprise.
+   *
+   * Protection plans are not. They are not merchandise — "By series" has
+   * never listed them, and every other ordering was putting a service
+   * agreement in a grid of computers.
    */
   var catalogue = [];
   var bestOrder = null;        // handles, ranked by Shopify; null until asked for
@@ -304,7 +308,7 @@
 
     primeSection.hidden = false;
     window.PRODUCTS = cat.products;
-    catalogue = cat.products;
+    catalogue = cat.products.filter(function (p) { return p.kind !== 'plan'; });
     paint(cat.sections, true);
     wireSort();
     honourHash();

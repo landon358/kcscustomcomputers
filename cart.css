@@ -178,18 +178,26 @@
 /* ------------------------------------------------ protection plan ------- */
 
 /* Offered once on the way to checkout, over the drawer. */
+/* flex-start with margin:auto on the card, not align-items:center: centred
+   while the card fits, scrollable when it does not. Two tiers with their
+   bullet lists run past 1200px on a phone, and centring alone puts both the
+   heading and "No thanks" outside the screen with no way to reach them. */
 .plan {
   position: fixed;
   inset: 0;
   z-index: 120;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: rgba(11, 27, 63, 0.45);
   backdrop-filter: blur(3px);
 }
 .plan__card {
+  margin: auto;
   width: 100%;
   max-width: 420px;
   background: var(--surface);
@@ -208,35 +216,8 @@
 }
 .plan__card .btn { margin-top: 22px; }
 
-/* Step two holds two tiers side by side, so it needs more room than the
-   question did. */
-.plan__card--wide { max-width: 640px; }
-.plan__tiers {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
-  margin-top: 22px;
-  text-align: left;
-}
-.plan__tier {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 18px 18px 18px;
-  background: var(--plate);
-}
-.plan__tier-name { margin: 0; font: 700 17px/1.25 var(--display); letter-spacing: -0.02em; }
-.plan__tier-price { margin: 8px 0 18px; font: 700 22px var(--display); letter-spacing: -0.025em; }
-.plan__tier-copy {
-  margin: 10px 0 18px;
-  font: 400 13.5px/1.55 var(--ui);
-  color: var(--ink-2);
-  text-wrap: pretty;
-}
-/* auto, not a fixed gap: the two buttons then line up with each other however
-   long the descriptions above them run. */
-.plan__tier .btn { margin-top: auto; }
+/* The offer is one card, wide enough to hold two tiers side by side. */
+.plan__card--wide { max-width: 700px; }
 .plan__terms { margin: 18px 0 0; font: 500 13px var(--ui); }
 .plan__terms a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; }
 .plan__skip {
@@ -251,5 +232,84 @@
   cursor: pointer;
 }
 .plan__skip:hover { color: var(--ink); text-decoration: underline; }
+/* KC wants the way out to arrive five seconds in. It holds its place in the
+   layout the whole time, so nothing below it jumps when it appears — and it
+   is never the only way out, since Escape and the backdrop work from the
+   first frame. */
+.plan__skip.is-waiting { visibility: hidden; }
+
+/* The offer's cards are the warranty page's, in a modal: tighter padding, and
+   they stack sooner because the dialog is narrower than a page. */
+.tiers--offer { margin-top: 20px; text-align: left; }
+.tiers--offer .tier { padding: 20px 20px 22px; }
+.tiers--offer .tier__list { font-size: 14px; }
+.tiers--offer .tier__list li { padding-bottom: 8px; }
+.tiers--offer .tier__price b { font-size: 26px; }
+/* .plan__card .btn sets a fixed margin for the dialog's own buttons, and it
+   outranks .tier__link. Put the auto back, so the two Add buttons sit level
+   with each other however long the bullet lists run. */
+.tiers--offer .tier__link { margin-top: auto; }
 
 @media (prefers-reduced-motion: reduce) { .plan { backdrop-filter: none; } }
+
+
+/* --------------------------------------------------- welcome panel ------ */
+
+/* The sign-in invitation on arrival. See welcome.js for why it behaves the
+   way it does. */
+.welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 115;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(11, 27, 63, 0.4);
+  backdrop-filter: blur(2px);
+}
+.welcome__card {
+  position: relative;
+  margin: auto;
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 34px 30px 26px;
+  box-shadow: 0 30px 70px rgba(11, 27, 63, 0.26);
+  text-align: center;
+}
+.welcome__title {
+  margin: 0;
+  font: 700 clamp(21px, 2.3vw, 25px)/1.2 var(--display);
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.welcome__copy {
+  margin: 12px 0 0;
+  font: 400 15px/1.6 var(--ui);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.welcome__card .btn { margin-top: 22px; }
+.welcome__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  font: 400 26px/1 var(--ui);
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.welcome__close:hover { background: var(--plate); color: var(--ink); }
+/* Five seconds, per KC. Hidden rather than absent, so the heading never
+   shifts when it arrives. Escape and the backdrop work the whole time. */
+.welcome__close.is-waiting { visibility: hidden; }
+
+@media (prefers-reduced-motion: reduce) { .welcome { backdrop-filter: none; } }

@@ -213,9 +213,13 @@
    * (Escape, or the backdrop) is neither — that leaves the shopper in their
    * cart rather than quietly sending them to pay.
    *
-   * Two steps, the way KC described it. The first asks. The second shows the
-   * tiers, because "which one" is a different question from "do you want one"
-   * and asking both at once is how people answer neither.
+   * One step: the two tiers, as they appear on the warranty page, each with
+   * an Add button. It used to ask "do you want a plan?" first and show the
+   * tiers second, which made saying yes take two clicks.
+   *
+   * Which plans appear, and the words on them, come from plans.js paired with
+   * the published products — the same source the warranty page reads, so the
+   * two cannot say different things.
    *
    * Skipped entirely when a plan is already in the cart. Someone who added
    * one on the product page has answered; asking again is nagging a customer
@@ -225,26 +229,6 @@
    * from the product in Shopify. Nothing about what is covered is written
    * here, because nothing here would be KC's to promise.
    */
-
-  function findPlans() {
-    var all = window.PRODUCTS || [];
-    // The protection collection is the real answer.
-    var listed = (window.Shopify && window.Shopify.plans)
-      ? window.Shopify.plans(all) : [];
-    if (listed.length) return listed;
-
-    /* Nothing there: fall back on the handle, then on the name.
-     *
-     * KC filed his first plan under Accessories, and a plan that is published
-     * and sellable should be offered whichever collection he put it in. This
-     * is what keeps that working until it is moved. */
-    var handle = (window.SHOPIFY_CONFIG || {}).protectionPlanHandle || '';
-    return all.filter(function (p) {
-      if (!p.inStock) return false;
-      return handle ? p.id === handle || p.handle === handle
-                    : /protection plan/i.test(p.name || '');
-    });
-  }
 
   function sellable(plan) {
     return (plan.variants || []).filter(function (v) { return v.available; })[0] || null;
@@ -278,10 +262,13 @@
 
   function showOffer() {
     var cart = window.Cart.get();
-    var plans = findPlans().filter(sellable);
+    var list = (window.PlanTiers ? window.PlanTiers.tiers(window.PRODUCTS || []) : [])
+      .filter(function (x) { return sellable(x.product); });
 
     // Nothing to offer, or they already have one: checkout as it always was.
-    if (!cart || !plans.length || planInCart(plans)) return Promise.resolve(true);
+    if (!cart || !list.length || planInCart(list.map(function (x) { return x.product; }))) {
+      return Promise.resolve(true);
+    }
 
     return new Promise(function (resolve) {
       var wrap = document.createElement('div');
@@ -289,69 +276,47 @@
       wrap.setAttribute('role', 'dialog');
       wrap.setAttribute('aria-modal', 'true');
       wrap.setAttribute('aria-labelledby', 'plan-title');
+
+      /* The same two cards as the warranty page, from plans.js, with an Add
+       * button on each. There used to be a step in front of this asking
+       * whether they wanted a plan at all, which made choosing one take two
+       * clicks and "no" take two decisions. */
+      wrap.innerHTML =
+        '<div class="plan__card plan__card--wide">' +
+          '<h2 class="plan__title" id="plan-title">Protect your purchase</h2>' +
+          '<p class="plan__copy">Ongoing care for your machine &mdash; priority ' +
+            'service, diagnostics and labor &mdash; for as long as you keep the plan.</p>' +
+          '<div class="tiers tiers--offer">' +
+            list.map(function (x, i) {
+              return window.PlanTiers.card(x,
+                '<button type="button" class="btn btn--primary btn--block tier__link" ' +
+                  'data-pick="' + i + '">Add this plan</button>');
+            }).join('') +
+          '</div>' +
+          '<p class="plan__terms"><a href="warranty.html">What each plan covers, in full</a></p>' +
+          /* KC asked for the way out to arrive five seconds in. It is kept in
+           * the layout from the start so nothing jumps when it appears, and it
+           * is never the only way out: Escape and the backdrop both work
+           * immediately, and both leave the cart as it is. */
+          '<button type="button" class="plan__skip is-waiting" id="plan-skip">' +
+            'No thanks, continue to checkout</button>' +
+        '</div>';
       document.body.appendChild(wrap);
 
-      function skipRow(label) {
-        return '<button type="button" class="plan__skip" id="plan-skip">' + label + '</button>';
-      }
+      var skip = document.getElementById('plan-skip');
+      var timer = setTimeout(function () { skip.classList.remove('is-waiting'); }, 5000);
 
-      /* Step one: the question. */
-      function ask() {
-        wrap.innerHTML =
-          '<div class="plan__card">' +
-            '<h2 class="plan__title" id="plan-title">Protect your purchase</h2>' +
-            '<p class="plan__copy">A protection plan covers the care around your ' +
-              'machine — priority service, diagnostics and labor — for as long as ' +
-              'you keep it.</p>' +
-            '<button type="button" class="btn btn--primary btn--lg btn--block" id="plan-yes">' +
-              'Add a protection plan</button>' +
-            skipRow('No thanks') +
-          '</div>';
-        document.getElementById('plan-yes').focus();
-        document.getElementById('plan-yes').addEventListener('click', choose);
-        document.getElementById('plan-skip').addEventListener('click', function () { leave(); });
-      }
-
-      /* Step two: which one. */
-      function choose() {
-        wrap.innerHTML =
-          '<div class="plan__card plan__card--wide">' +
-            '<h2 class="plan__title" id="plan-title">Choose your plan</h2>' +
-            '<div class="plan__tiers">' +
-              plans.map(function (plan, i) {
-                var v = sellable(plan);
-                /* The one line that tells the tiers apart, from the plan's
-                 * `best_for` metafield — KC's words, the same field every
-                 * machine uses for its tagline.
-                 *
-                 * Not the Shopify description: that is the whole agreement,
-                 * and it arrives as one flat string with its own heading
-                 * folded into the first sentence, so any attempt to cut it to
-                 * card length reads as a stutter of the name above it. The
-                 * full text is one click away under the tiers. */
-                var line = plan.tagline || '';
-                return '<div class="plan__tier">' +
-                  '<h3 class="plan__tier-name">' + esc(plan.name) + '</h3>' +
-                  '<p class="plan__tier-price">' + money(v.price, cart.currency) + '</p>' +
-                  (line ? '<p class="plan__tier-copy">' + esc(line) + '</p>' : '') +
-                  '<button type="button" class="btn btn--primary btn--block" ' +
-                    'data-pick="' + i + '">Add this plan</button>' +
-                '</div>';
-              }).join('') +
-            '</div>' +
-            '<p class="plan__terms"><a href="warranty.html">What each plan covers, in full</a></p>' +
-            skipRow('No thanks, continue to checkout') +
-          '</div>';
-        var first = wrap.querySelector('[data-pick]');
-        if (first) first.focus();
-        wrap.querySelectorAll('[data-pick]').forEach(function (b) {
-          b.addEventListener('click', function () { add(plans[Number(b.getAttribute('data-pick'))], b); });
+      var first = wrap.querySelector('[data-pick]');
+      if (first) first.focus();
+      wrap.querySelectorAll('[data-pick]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          add(list[Number(b.getAttribute('data-pick'))], b);
         });
-        document.getElementById('plan-skip').addEventListener('click', function () { leave(); });
-      }
+      });
+      skip.addEventListener('click', function () { leave(); });
 
-      function add(plan, btn) {
-        var v = sellable(plan);
+      function add(x, btn) {
+        var v = sellable(x.product);
         wrap.querySelectorAll('[data-pick]').forEach(function (b) { b.disabled = true; });
         btn.textContent = 'Adding…';
         window.Cart.addLines([{ merchandiseId: v.id, quantity: 1 }])
@@ -379,6 +344,7 @@
       }
 
       function close() {
+        clearTimeout(timer);
         document.removeEventListener('keydown', onKey);
         if (wrap.parentNode) wrap.remove();
       }
@@ -387,7 +353,6 @@
 
       wrap.addEventListener('click', function (e) { if (e.target === wrap) dismiss(); });
       document.addEventListener('keydown', onKey);
-      ask();
     });
   }
 

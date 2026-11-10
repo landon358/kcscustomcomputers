@@ -1005,6 +1005,14 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
   color: var(--ink-2);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+/* The subscription price under the prepaid one, on a plan's row. */
+.addon__sub {
+  display: block;
+  margin-top: 2px;
+  font: 500 11.5px var(--ui);
+  color: var(--ink-4);
 }
 
 /* The protection plans, directly above the accessories.
@@ -1184,8 +1192,19 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
 
 /* The two short blocks above the contracts. Same measure as .policy so the
    whole page reads as one column. */
-.legal__intro { max-width: 720px; font: 400 16.5px/1.7 var(--ui); color: var(--ink-2); }
-.legal__intro p { margin: 0 0 14px; }
+/* Two columns rather than one 720px column with half the page empty beside
+   it. Full width in one column would fill the same space, but at this size a
+   line would run past 150 characters, which is a paragraph nobody finishes.
+   Both of these blocks are exactly two paragraphs, so they sit side by side. */
+.legal__intro {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 38px;
+  align-items: start;
+  font: 400 16.5px/1.7 var(--ui);
+  color: var(--ink-2);
+}
+.legal__intro p { margin: 0; text-wrap: pretty; }
 .legal__intro b { font-weight: 600; color: var(--ink); }
 
 .legal__note {
@@ -1230,9 +1249,13 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
-  align-items: start;
+  /* stretch, so the two cards match height and their buttons line up however
+     many bullets each tier has */
+  align-items: stretch;
 }
 .tier {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface);
@@ -1273,6 +1296,13 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
   color: var(--ink-2);
 }
 .tier__list li { position: relative; padding: 0 0 10px 24px; }
+/* The warranty page's cards link to the plan rather than selling it there:
+   the place to add one is the machine's page or the popup at checkout. */
+.tier__link { margin-top: auto; }
+/* auto pushes it to the foot of the card; this is the gap above it when the
+   bullets end well short of the other card's */
+.tier__list, .tier__also + .tier__list { margin-bottom: 20px; }
+
 .tier__list li::before {
   content: '';
   position: absolute;
@@ -1284,6 +1314,37 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
   border-width: 0 0 2px 2px;
   transform: rotate(-45deg);
 }
+
+/* The agreements are not on this page any more — two links are. One points at
+   our own copy of the warranty, the other at the Google Doc KC keeps the plan
+   agreement in. */
+.docs__head {
+  margin: 0;
+  font: 700 clamp(18px, 1.8vw, 21px)/1.25 var(--display);
+  letter-spacing: -0.02em;
+}
+.docs__lede { margin: 8px 0 0; font: 400 15px/1.6 var(--ui); color: var(--ink-2); }
+.docs {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.docs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 18px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.docs a {
+  font: 600 15.5px var(--ui);
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.docs span { font: 400 14px/1.55 var(--ui); color: var(--ink-3); }
 
 /* The contracts themselves: .policy sets the type, .legal adds the numbering
    and the section index. */
@@ -1392,6 +1453,7 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
   .config__panel { border-left: none; border-top: 1px solid var(--line-3); padding: 24px 22px; }
 
   .tiers { grid-template-columns: 1fr; }
+  .legal__intro { grid-template-columns: 1fr; gap: 14px; }
   .facts, .facts--plain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .grid--3, .grid--4, .product, .related { grid-template-columns: 1fr; }

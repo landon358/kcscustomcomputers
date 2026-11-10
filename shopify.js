@@ -72,7 +72,9 @@
   // one per resolution tab on the product page.
   var FPS_FIELDS = [['fps', 'fps'], ['fps_1440', 'fps1440'], ['fps_4k', 'fps4k']];
   var META_KEYS = SPEC_FIELDS.map(function (f) { return f[0]; })
-    .concat(['best_for', 'blurb', 'bench_note', 'benchmark_scores'])
+    // `monthly` is the protection plans' one: the subscription price beside
+    // the prepaid one a product can actually charge.
+    .concat(['best_for', 'blurb', 'bench_note', 'benchmark_scores', 'monthly'])
     .concat(FPS_FIELDS.map(function (f) { return f[0]; }));
 
   /* Shopify's Add-definition screen defaults the namespace to `custom`, and
@@ -354,7 +356,11 @@
       fpsNotes: fpsNotes,
       // How the numbers were taken. His words, not ours — the site used to
       // assert a methodology nobody had verified.
-      benchNote: meta.bench_note || ''
+      benchNote: meta.bench_note || '',
+      // A protection plan's monthly subscription price, written as KC writes
+      // it ("10.99"). Shopify sells the prepaid term; this is the figure
+      // beside it, and nothing shows when he has not set one.
+      monthly: String(meta.monthly || '').trim()
     };
   }
 

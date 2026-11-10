@@ -371,7 +371,15 @@
           esc(slim ? planLabel(x.name) : x.name) + '</a>' +
         picker +
       '</div>' +
-      '<span class="addon__price">+' + window.money(v ? v.price : x.price) + '</span>' +
+      '<span class="addon__price">+' + window.money(v ? v.price : x.price) +
+        /* A plan's row carries the subscription price under the prepaid one,
+         * from the `monthly` metafield. Nothing shows when KC has not set
+         * one — the figure is his to state, not ours to work out. */
+        (slim && window.PlanTiers && window.PlanTiers.monthlyLine(x)
+          ? '<small class="addon__sub">or ' +
+              esc(window.PlanTiers.monthlyLine(x)) + '</small>'
+          : '') +
+      '</span>' +
     '</li>';
   }
 
