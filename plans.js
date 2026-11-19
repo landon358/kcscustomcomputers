@@ -9,8 +9,8 @@
  * for the tier and what it covers, from his own plan sheet. Everything with a
  * number in it comes from the product:
  *
- *   price    the Shopify price, whatever it is today
- *   monthly  the `monthly` metafield, namespace `specs` — "10.99"
+ *   price    the Shopify price, bought outright
+ *   monthly  the subscription Shopify sells it on, if there is one
  *
  * `handle` ties a tier to its product. A tier whose product is not published
  * does not render at all, and a published plan with no tier here still sells:
@@ -18,7 +18,7 @@
  */
 window.PLAN_TIERS = [
   {
-    handle: 'pc-protection-plan-plus-3-year',
+    handle: 'pc-protection-plan-plus-3-year-1',
     name: 'Protection Plan Plus',
     bullets: [
       'Priority scheduling for service requests',
@@ -52,13 +52,25 @@ window.PLAN_TIERS = [
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // "10.99" -> "$10.99 a month". KC writes the figure, not the formatting.
+  /* The subscription a plan is sold on, if KC has set one up in Shopify.
+   *
+   * It used to be a `monthly` metafield — a number typed next to the real
+   * one. Shopify sells these on a selling plan now, so the figure here is the
+   * one checkout will actually charge, and it carries the id the cart line
+   * needs to be charged it.
+   */
+  function subscription(product) {
+    var v = (product && product.variants || []).filter(function (x) {
+      return x.available && (x.sellingPlans || []).length;
+    })[0];
+    if (!v) return null;
+    return v.sellingPlans.filter(function (p) { return p.recurring; })[0] || null;
+  }
+
+  // "$10.99 a month", or nothing when the plan is only sold outright.
   function monthlyLine(product) {
-    var raw = (product && product.monthly) || '';
-    if (!raw) return '';
-    var n = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
-    if (!isFinite(n)) return '';
-    return window.money(n) + ' a month';
+    var sub = subscription(product);
+    return sub ? window.money(sub.price) + ' a month' : '';
   }
 
   /* The tiers that have a published product behind them, in the order they
@@ -85,17 +97,25 @@ window.PLAN_TIERS = [
   }
 
   /* One card. `button` is the HTML for whatever goes at the bottom — the
-   * popup puts an Add button there, the warranty page nothing. */
+   * popup puts an Add button there, the warranty page a link.
+   *
+   * Monthly leads when there is a subscription, with paying outright under
+   * it: the cheaper number first, and the larger one a deliberate choice
+   * rather than the only one on offer. */
   function card(x, button) {
     var t = x.tier, p = x.product;
-    var monthly = monthlyLine(p);
+    var sub = subscription(p);
+    var head = sub
+      ? '<p class="tier__price"><b>' + window.money(sub.price) + '</b>' +
+          '<span>a month</span></p>' +
+        '<p class="tier__alt">or <b>' + window.money(p.price) + '</b> paid in full</p>'
+      : '<p class="tier__price"><b>' + window.money(p.price) + '</b>' +
+          '<span>for three years</span></p>';
     return '<article class="tier' + (t.tag ? ' tier--featured' : '') + '">' +
       '<header class="tier__head">' +
         (t.tag ? '<span class="tier__tag">' + esc(t.tag) + '</span>' : '') +
         '<h3>' + esc(t.name) + '</h3>' +
-        '<p class="tier__price"><b>' + window.money(p.price) + '</b>' +
-          '<span>for three years</span></p>' +
-        (monthly ? '<p class="tier__alt">or <b>' + esc(monthly) + '</b></p>' : '') +
+        head +
       '</header>' +
       (t.also ? '<p class="tier__also">' + esc(t.also) + '</p>' : '') +
       (t.bullets.length
@@ -107,5 +127,27 @@ window.PLAN_TIERS = [
     '</article>';
   }
 
-  window.PlanTiers = { tiers: tiers, card: card, monthlyLine: monthlyLine };
+  /* The two ways to buy, monthly first. Returned as plain data so the popup
+   * and the product page can draw the choice in their own shapes. */
+  function options(product) {
+    var sub = subscription(product);
+    var v = (product.variants || []).filter(function (x) { return x.available; })[0]
+      || product.variants[0];
+    var out = [];
+    if (sub) {
+      out.push({ id: sub.id, label: 'Monthly', price: sub.price, note: 'a month',
+                 variantId: v ? v.id : product.variantId });
+    }
+    out.push({ id: '', label: 'Pay in full', price: product.price, note: 'once',
+               variantId: v ? v.id : product.variantId });
+    return out;
+  }
+
+  window.PlanTiers = {
+    tiers: tiers,
+    card: card,
+    options: options,
+    subscription: subscription,
+    monthlyLine: monthlyLine
+  };
 })();

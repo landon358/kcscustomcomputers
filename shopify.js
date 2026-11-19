@@ -72,9 +72,7 @@
   // one per resolution tab on the product page.
   var FPS_FIELDS = [['fps', 'fps'], ['fps_1440', 'fps1440'], ['fps_4k', 'fps4k']];
   var META_KEYS = SPEC_FIELDS.map(function (f) { return f[0]; })
-    // `monthly` is the protection plans' one: the subscription price beside
-    // the prepaid one a product can actually charge.
-    .concat(['best_for', 'blurb', 'bench_note', 'benchmark_scores', 'monthly'])
+    .concat(['best_for', 'blurb', 'bench_note', 'benchmark_scores'])
     .concat(FPS_FIELDS.map(function (f) { return f[0]; }));
 
   /* Shopify's Add-definition screen defaults the namespace to `custom`, and
@@ -104,8 +102,16 @@
     'images(first: 8) { edges { node { url altText } } }',
     'metafields(identifiers: [' + META_IDS + ']) { namespace key value }',
     'options { name optionValues { name } }',
+    /* sellingPlanAllocations is how a subscription reaches the storefront.
+     * KC's protection plans carry one — "Deliver every month, $10.99" — beside
+     * the variant's own one-time price, and a cart line has to name the plan
+     * it is being bought on or Shopify charges the one-time price. Two is
+     * room for monthly and, later, annual; nothing else here has any. */
     'variants(first: 20) { edges { node { id title availableForSale quantityAvailable ' +
-      'price { amount currencyCode } image { url } selectedOptions { name value } } } }'
+      'price { amount currencyCode } image { url } selectedOptions { name value } ' +
+      'sellingPlanAllocations(first: 2) { edges { node { ' +
+        'sellingPlan { id name recurringDeliveries } ' +
+        'priceAdjustments { price { amount } } } } } } } }'
   ].join(' ');
 
   // Shopify returns one slot per identifier, null for the ones not set. Keys
@@ -249,6 +255,28 @@
     });
   }
 
+  /* The subscriptions a variant can be bought on, cheapest first.
+   *
+   * Each one carries the id a cart line has to quote and the price Shopify
+   * will actually charge on it — not the variant's own price, which is what
+   * the same line costs bought outright.
+   */
+  function sellingPlans(v) {
+    return ((v.sellingPlanAllocations && v.sellingPlanAllocations.edges) || [])
+      .map(function (e) {
+        var a = e.node, plan = a.sellingPlan || {};
+        var adj = (a.priceAdjustments || [])[0];
+        return {
+          id: plan.id,
+          name: plan.name || '',
+          recurring: !!plan.recurringDeliveries,
+          price: adj && adj.price ? parseFloat(adj.price.amount) : null
+        };
+      })
+      .filter(function (p) { return p.id && p.price !== null; })
+      .sort(function (a, b) { return a.price - b.price; });
+  }
+
   function normalise(node, section) {
     var variants = node.variants.edges.map(function (e) {
       var v = e.node, opts = {};
@@ -259,7 +287,8 @@
         available: v.availableForSale,
         price: parseFloat(v.price.amount),
         image: v.image ? v.image.url : null,
-        options: opts
+        options: opts,
+        sellingPlans: sellingPlans(v)
       };
     });
     // The variant a page opens on: the first one that can actually be bought,
@@ -356,11 +385,7 @@
       fpsNotes: fpsNotes,
       // How the numbers were taken. His words, not ours — the site used to
       // assert a methodology nobody had verified.
-      benchNote: meta.bench_note || '',
-      // A protection plan's monthly subscription price, written as KC writes
-      // it ("10.99"). Shopify sells the prepaid term; this is the figure
-      // beside it, and nothing shows when he has not set one.
-      monthly: String(meta.monthly || '').trim()
+      benchNote: meta.bench_note || ''
     };
   }
 
@@ -669,6 +694,11 @@
     'id checkoutUrl totalQuantity ' +
     'cost { subtotalAmount { amount currencyCode } totalAmount { amount currencyCode } } ' +
     'lines(first: 50) { edges { node { id quantity ' +
+    // What the line costs as it stands. A subscription line's variant price is
+    // still the one-time one, so the per-unit figure has to come from the
+    // line's own cost or the drawer would read $350 against a $10.99 charge.
+    'cost { amountPerQuantity { amount currencyCode } } ' +
+    'sellingPlanAllocation { sellingPlan { id name recurringDeliveries } } ' +
     'merchandise { ... on ProductVariant { id title ' +
     'price { amount currencyCode } image { url } ' +
     'product { title handle } } } } } }';
@@ -703,7 +733,7 @@
       subtotal: parseFloat(cart.cost.subtotalAmount.amount),
       currency: cart.cost.subtotalAmount.currencyCode,
       lines: cart.lines.edges.map(function (e) {
-        var n = e.node, m = n.merchandise;
+        var n = e.node, m = n.merchandise, alloc = n.sellingPlanAllocation;
         return {
           lineId: n.id,
           quantity: n.quantity,
@@ -712,7 +742,18 @@
           title: m.product.title,
           handle: m.product.handle,
           image: m.image ? m.image.url : null,
-          price: parseFloat(m.price.amount)
+          // The line's own price, which is the subscription price when it is
+          // on a plan and the variant's price when it is not.
+          price: n.cost && n.cost.amountPerQuantity
+            ? parseFloat(n.cost.amountPerQuantity.amount)
+            : parseFloat(m.price.amount),
+          // Named so the drawer can say "every month" rather than leaving a
+          // subscription looking like an outright purchase.
+          sellingPlan: alloc && alloc.sellingPlan ? {
+            id: alloc.sellingPlan.id,
+            name: alloc.sellingPlan.name || '',
+            recurring: !!alloc.sellingPlan.recurringDeliveries
+          } : null
         };
       })
     };
@@ -789,7 +830,12 @@
   function addLines(lines) {
     if (!configured) return Promise.reject(new Error('Shopify not configured'));
     lines = (lines || []).filter(function (l) { return l && l.merchandiseId; })
-      .map(function (l) { return { merchandiseId: l.merchandiseId, quantity: l.quantity || 1 }; });
+      .map(function (l) {
+        var line = { merchandiseId: l.merchandiseId, quantity: l.quantity || 1 };
+        // Without this the line is bought outright, whatever the buyer chose.
+        if (l.sellingPlanId) line.sellingPlanId = l.sellingPlanId;
+        return line;
+      });
     if (!lines.length) return Promise.reject(new Error('Nothing to add — this product has no variant ID'));
 
     var id = state && state.id;

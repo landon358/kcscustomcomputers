@@ -307,8 +307,24 @@
   }
 
   function addonState(x) {
-    if (!addons[x.id]) addons[x.id] = { on: false, variant: variantOf(x, x.variantId).id };
+    if (!addons[x.id]) {
+      addons[x.id] = { on: false, variant: variantOf(x, x.variantId).id };
+      /* A protection plan is bought monthly or outright. Monthly is what the
+       * row opens on: it is the smaller number and the one most people want,
+       * and paying in full stays a deliberate choice rather than the only
+       * one on offer. */
+      if (isPlan(x) && window.PlanTiers) {
+        addons[x.id].pay = 0;
+        addons[x.id].opts = window.PlanTiers.options(x);
+      }
+    }
     return addons[x.id];
+  }
+
+  // How this plan is being bought, or null for anything that is not one.
+  function payOption(x) {
+    var st = addons[x.id];
+    return (st && st.opts && st.opts.length) ? st.opts[st.pay || 0] : null;
   }
 
   /* The name as the plans block shows it.
@@ -356,6 +372,19 @@
         }).join('') + '</select></div>';
     }
 
+    /* A plan's row swaps the colour buttons for the two ways to pay. It is
+     * the same control doing the same job: a small row of choices under the
+     * name, with the one in force marked. */
+    var pay = payOption(x);
+    if (pay) {
+      picker = '<div class="addon__vals">' + addonState(x).opts.map(function (o, j) {
+        var on = (addonState(x).pay || 0) === j;
+        return '<button type="button" class="optval optval--sm' + (on ? ' is-on' : '') + '"' +
+          ' aria-pressed="' + on + '" data-addon="' + esc(x.id) + '" data-pay="' + j + '">' +
+          esc(o.label) + '</button>';
+      }).join('') + '</div>';
+    }
+
     var img = (v && v.image) || x.images[0] || '';
     return '<li class="addon' + (st.on ? ' is-on' : '') + '">' +
       '<label class="addon__pick">' +
@@ -371,14 +400,9 @@
           esc(slim ? planLabel(x.name) : x.name) + '</a>' +
         picker +
       '</div>' +
-      '<span class="addon__price">+' + window.money(v ? v.price : x.price) +
-        /* A plan's row carries the subscription price under the prepaid one,
-         * from the `monthly` metafield. Nothing shows when KC has not set
-         * one — the figure is his to state, not ours to work out. */
-        (slim && window.PlanTiers && window.PlanTiers.monthlyLine(x)
-          ? '<small class="addon__sub">or ' +
-              esc(window.PlanTiers.monthlyLine(x)) + '</small>'
-          : '') +
+      '<span class="addon__price">+' + window.money(pay ? pay.price : (v ? v.price : x.price)) +
+        // What that figure means: every month, or once.
+        (pay ? '<small class="addon__sub">' + esc(pay.note) + '</small>' : '') +
       '</span>' +
     '</li>';
   }
@@ -439,7 +463,19 @@
     return addonList().shown.concat(planList()).filter(function (x) {
       return addons[x.id] && addons[x.id].on;
     }).map(function (x) {
-      return { product: x, variant: variantOf(x, addons[x.id].variant) };
+      var pay = payOption(x);
+      var variant = variantOf(x, addons[x.id].variant);
+      return {
+        product: x,
+        variant: variant,
+        // Named on the cart line, or Shopify charges the outright price
+        // whichever way the buyer chose.
+        sellingPlanId: pay ? (pay.id || null) : null,
+        // What this line costs at the till today. On a subscription that is
+        // the first month, which is what checkout will actually take.
+        price: pay ? pay.price : variant.price,
+        recurring: !!(pay && pay.id)
+      };
     }).filter(function (a) { return available(a.variant); });
   }
 
@@ -466,6 +502,17 @@
     });
 
     $(box).addEventListener('click', function (ev) {
+      var pay = ev.target.closest('[data-addon][data-pay]');
+      if (pay && !pay.disabled) {
+        var ps = addons[pay.getAttribute('data-addon')];
+        if (!ps) return;
+        ps.pay = Number(pay.getAttribute('data-pay'));
+        // Picking how to pay is not picking the plan. Someone weighing $10.99
+        // against $350 has not agreed to either yet.
+        addonsChanged();
+        return;
+      }
+
       var b = ev.target.closest('[data-addon][data-variant]');
       if (!b || b.disabled) return;
       var st = addons[b.getAttribute('data-addon')];
@@ -492,6 +539,8 @@
     var vals = Object.keys(a.variant.options || {}).filter(function (n) {
       return (a.product.options || []).some(function (o) { return o.name === n; });
     }).map(function (n) { return a.variant.options[n]; });
+    // A plan says how it is being paid for; a stand has nothing to add.
+    if (a.recurring) return a.product.name + ', ' + window.money(a.price) + ' a month';
     return a.product.name + (vals.length ? ' (' + vals.join(', ') + ')' : '');
   }
 
@@ -515,7 +564,9 @@
     }
 
     var extras = chosenAddons();
-    var total = cur.price * qty + extras.reduce(function (sum, a) { return sum + a.variant.price; }, 0);
+    // What is charged today. A plan bought monthly puts its first month in
+    // here, not three years of it.
+    var total = cur.price * qty + extras.reduce(function (sum, a) { return sum + a.price; }, 0);
 
     buy.disabled = pending;
     buy.className = 'btn ' + (pending ? 'btn--disabled' : 'btn--primary');
@@ -571,7 +622,7 @@
     // whole order. Add-ons go in one each whatever the build quantity: two
     // PCs is rarely two identical stands, and the drawer can change it.
     var lines = [{ merchandiseId: cur.id, quantity: qty }].concat(extras.map(function (a) {
-      return { merchandiseId: a.variant.id, quantity: 1 };
+      return { merchandiseId: a.variant.id, quantity: 1, sellingPlanId: a.sellingPlanId || null };
     }));
 
     pending = true;

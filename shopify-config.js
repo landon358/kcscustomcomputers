@@ -101,18 +101,20 @@ window.SHOPIFY_CONFIG = {
    *    the shop as something to browse; in `protection` it appears only where
    *    a plan belongs — on a machine's product page and in the popup on the
    *    way to checkout.
-   * 3. Give it the `best_for` metafield, namespace `specs`, with "Storefront
-   *    access" ticked: one line saying what this tier is, which is what tells
-   *    the two tiers apart in the popup. Without it the card shows the name
-   *    and the price only.
+   * 3. Set up its monthly subscription in Shopify, as a selling plan on the
+   *    product. The site reads the price and the plan id straight off it, so
+   *    the figure on the card is the one checkout charges — there is no
+   *    second copy to keep in step. Without one, the plan is offered as a
+   *    single outright price.
    * 4. The product description is shown in full on the plan's own product
    *    page, so write it for a buyer. It is never cut down for a card.
    * 5. Turn OFF inventory tracking, or set it to keep selling when it hits
    *    zero. A plan is not a thing on a shelf — with quantity 1 it stops
    *    being offered the moment somebody buys one.
    *
-   * Monthly billing needs a Shopify subscription app; a plain product can
-   * only charge once. Until one is installed, publish the prepaid price.
+   * What a tier is called on the site, and the list of what it covers, is in
+   * plans.js — keyed to the product's handle. Rebuilding a product rather
+   * than editing it changes that handle, and the tier then loses its list.
    * ------------------------------------------------------------------- */
 
   /* ---------------------------------------------------------------------

@@ -1296,6 +1296,11 @@ a.pill--outline:hover { color: var(--blue); border-color: var(--blue-border); }
   color: var(--ink-2);
 }
 .tier__list li { position: relative; padding: 0 0 10px 24px; }
+/* How to pay, then the button, at the foot of a card. */
+.tier__buy { margin-top: auto; }
+.tier__opts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tier__buy .btn { margin-top: 0; }
+
 /* The warranty page's cards link to the plan rather than selling it there:
    the place to add one is the machine's page or the popup at checkout. */
 .tier__link { margin-top: auto; }

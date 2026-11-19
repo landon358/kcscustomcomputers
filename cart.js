@@ -117,6 +117,11 @@
             '<p class="cline__name">' + esc(l.title) + '</p>' +
             (l.variantTitle && l.variantTitle !== 'Default Title'
               ? '<div class="cline__variant">' + esc(l.variantTitle) + '</div>' : '') +
+            // A subscription line costs the same again next month. Without
+            // this the drawer shows $10.99 beside a $350 plan and says
+            // nothing about which one is being agreed to.
+            (l.sellingPlan && l.sellingPlan.recurring
+              ? '<div class="cline__plan">Billed monthly</div>' : '') +
             '<div class="cqty">' +
               '<button type="button" data-act="dec" aria-label="Decrease quantity">&minus;</button>' +
               '<span>' + l.quantity + '</span>' +
@@ -277,21 +282,34 @@
       wrap.setAttribute('aria-modal', 'true');
       wrap.setAttribute('aria-labelledby', 'plan-title');
 
-      /* The same two cards as the warranty page, from plans.js, with an Add
-       * button on each. There used to be a step in front of this asking
-       * whether they wanted a plan at all, which made choosing one take two
-       * clicks and "no" take two decisions. */
+      /* The same two cards as the warranty page, from plans.js, with a way to
+       * buy on each: monthly or paid in full, monthly chosen. There used to be
+       * a step in front of this asking whether they wanted a plan at all,
+       * which made choosing one take two clicks and "no" take two decisions. */
+      var picked = list.map(function () { return 0; });   // monthly, per card
+
+      function buy(i) {
+        var opts = window.PlanTiers.options(list[i].product);
+        return '<div class="tier__buy">' +
+          (opts.length > 1
+            ? '<div class="tier__opts">' + opts.map(function (o, j) {
+                return '<button type="button" class="optval optval--sm' +
+                  (picked[i] === j ? ' is-on' : '') + '" data-card="' + i + '" data-opt="' + j + '">' +
+                  esc(o.label) + ' &middot; ' + money(o.price, cart.currency) + '</button>';
+              }).join('') + '</div>'
+            : '') +
+          '<button type="button" class="btn btn--primary btn--block tier__link" ' +
+            'data-pick="' + i + '">Add this plan</button>' +
+        '</div>';
+      }
+
       wrap.innerHTML =
         '<div class="plan__card plan__card--wide">' +
           '<h2 class="plan__title" id="plan-title">Protect your purchase</h2>' +
           '<p class="plan__copy">Ongoing care for your machine &mdash; priority ' +
             'service, diagnostics and labor &mdash; for as long as you keep the plan.</p>' +
           '<div class="tiers tiers--offer">' +
-            list.map(function (x, i) {
-              return window.PlanTiers.card(x,
-                '<button type="button" class="btn btn--primary btn--block tier__link" ' +
-                  'data-pick="' + i + '">Add this plan</button>');
-            }).join('') +
+            list.map(function (x, i) { return window.PlanTiers.card(x, buy(i)); }).join('') +
           '</div>' +
           '<p class="plan__terms"><a href="warranty.html">What each plan covers, in full</a></p>' +
           /* KC asked for the way out to arrive five seconds in. It is kept in
@@ -308,24 +326,37 @@
 
       var first = wrap.querySelector('[data-pick]');
       if (first) first.focus();
-      wrap.querySelectorAll('[data-pick]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          add(list[Number(b.getAttribute('data-pick'))], b);
-        });
-      });
       skip.addEventListener('click', function () { leave(); });
 
-      function add(x, btn) {
-        var v = sellable(x.product);
-        wrap.querySelectorAll('[data-pick]').forEach(function (b) { b.disabled = true; });
+      // One handler for both cards: the buttons are redrawn when a way to pay
+      // is chosen, so anything bound to them directly would not survive it.
+      wrap.addEventListener('click', function (ev) {
+        var opt = ev.target.closest('[data-opt]');
+        if (opt) {
+          var card = Number(opt.getAttribute('data-card'));
+          picked[card] = Number(opt.getAttribute('data-opt'));
+          wrap.querySelectorAll('.tier__buy')[card].outerHTML = buy(card);
+          return;
+        }
+        var go = ev.target.closest('[data-pick]');
+        if (go && !go.disabled) add(Number(go.getAttribute('data-pick')), go);
+      });
+
+      function add(i, btn) {
+        var opt = window.PlanTiers.options(list[i].product)[picked[i]];
+        wrap.querySelectorAll('[data-pick], [data-opt]').forEach(function (b) { b.disabled = true; });
         btn.textContent = 'Adding…';
-        window.Cart.addLines([{ merchandiseId: v.id, quantity: 1 }])
+        window.Cart.addLines([{
+          merchandiseId: opt.variantId,
+          quantity: 1,
+          sellingPlanId: opt.id || null
+        }])
           .then(function () { leave(); })
           .catch(function (err) {
             console.error('[plan]', err.message);
             // The plan could not be added. Say so, and do not hold the
             // checkout hostage over it.
-            wrap.querySelectorAll('[data-pick]').forEach(function (b) { b.disabled = false; });
+            wrap.querySelectorAll('[data-pick], [data-opt]').forEach(function (b) { b.disabled = false; });
             btn.textContent = 'Could not add — continue to checkout';
             btn.onclick = function () { leave(); };
           });

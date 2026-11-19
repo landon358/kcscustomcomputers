@@ -182,6 +182,15 @@
    while the card fits, scrollable when it does not. Two tiers with their
    bullet lists run past 1200px on a phone, and centring alone puts both the
    heading and "No thanks" outside the screen with no way to reach them. */
+/* A line that renews, marked in the drawer. */
+.cline__plan {
+  margin-top: 3px;
+  font: 600 11px var(--ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
 .plan {
   position: fixed;
   inset: 0;
@@ -248,7 +257,8 @@
 /* .plan__card .btn sets a fixed margin for the dialog's own buttons, and it
    outranks .tier__link. Put the auto back, so the two Add buttons sit level
    with each other however long the bullet lists run. */
-.tiers--offer .tier__link { margin-top: auto; }
+.tiers--offer .tier__link { margin-top: 0; }
+.tiers--offer .tier__buy { margin-top: auto; }
 
 @media (prefers-reduced-motion: reduce) { .plan { backdrop-filter: none; } }
 
